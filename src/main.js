@@ -201,6 +201,10 @@ chat.onSubmit = (msg) => {
     setGamemode,
     inventory,
     hud,
+    // `touch` is declared below; by the time a command runs it exists.
+    get touch() {
+      return touch;
+    },
   });
   chat.logMessage(result);
 };
@@ -217,7 +221,9 @@ const touch = new TouchControls(document.querySelector('.hud'), input, {
     if (!chat.open) hud.toggleInventory();
   },
   toggleChat: () => {
-    if (!hud.inventoryOpen) chat.toggle();
+    // focusNow: focusing inside the touch gesture is what makes iOS
+    // bring up the on-screen keyboard.
+    if (!hud.inventoryOpen) chat.toggle(true);
   },
   pause: () => input.releaseLock(),
 });

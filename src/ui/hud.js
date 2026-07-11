@@ -51,6 +51,14 @@ export class HUD {
 
     this.invPanel = el('div', 'inv-panel');
     this.invPanel.innerHTML = '<h2>Inventory</h2><p class="inv-hint">Click to move · Shift-click to quick-move · Craft on the left</p>';
+    // Touch devices have no E/Escape key, so the panel needs its own way out.
+    const invClose = el('div', 'panel-close');
+    invClose.textContent = '✕';
+    invClose.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.toggleInventory();
+    });
+    this.invPanel.appendChild(invClose);
 
     const body = el('div', 'inv-body');
     this.craftArea = el('div', 'craft-area');
