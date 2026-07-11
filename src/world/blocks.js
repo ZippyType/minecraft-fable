@@ -37,6 +37,23 @@ export const BLOCK_HARDNESS = {
   [BLOCK.IRON_ORE]: 3.0,
 };
 
+// Which tool class (see world/items.js) mines each block faster.
+// Blocks not listed here break at hand speed no matter what is held.
+const EFFECTIVE_TOOL = {
+  [BLOCK.GRASS]: 'shovel',
+  [BLOCK.DIRT]: 'shovel',
+  [BLOCK.SAND]: 'shovel',
+  [BLOCK.WOOD]: 'axe',
+  [BLOCK.LEAVES]: 'axe',
+  [BLOCK.STONE]: 'pickaxe',
+  [BLOCK.COAL_ORE]: 'pickaxe',
+  [BLOCK.IRON_ORE]: 'pickaxe',
+};
+
+export function effectiveTool(id) {
+  return EFFECTIVE_TOOL[id] ?? null;
+}
+
 // Solid = collides with the player and blocks the targeting raycast.
 export function isSolid(id) {
   return id !== BLOCK.AIR && id !== BLOCK.WATER;
