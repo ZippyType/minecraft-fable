@@ -1,0 +1,579 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+}
+
+canvas {
+  display: block;
+}
+
+.hud {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  font-family: 'Courier New', monospace;
+  color: #fff;
+  user-select: none;
+}
+
+.crosshair {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 18px;
+  height: 18px;
+}
+
+.crosshair::before,
+.crosshair::after {
+  content: '';
+  position: absolute;
+  background: rgba(255, 255, 255, 0.85);
+  mix-blend-mode: difference;
+}
+
+.crosshair::before {
+  left: 8px;
+  top: 0;
+  width: 2px;
+  height: 18px;
+}
+
+.crosshair::after {
+  left: 0;
+  top: 8px;
+  width: 18px;
+  height: 2px;
+}
+
+.hotbar {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 6px;
+}
+
+/* Floating label above the hotbar that announces the currently selected item. */
+.selected-name {
+  position: absolute;
+  bottom: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 14px;
+  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 4px;
+  font-size: 14px;
+  letter-spacing: 1.2px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  text-shadow: 1px 1px 2px #000;
+}
+
+.slot {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.slot.selected {
+  border-color: #fff;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+}
+
+.slot .num {
+  position: absolute;
+  top: 1px;
+  left: 3px;
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+.debug {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.4);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+  border-radius: 4px;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 15, 30, 0.55);
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.panel {
+  text-align: center;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 28px 40px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.panel h1 {
+  margin: 0 0 4px;
+  letter-spacing: 2px;
+}
+
+.panel .sub {
+  margin: 0 0 14px;
+  opacity: 0.7;
+}
+
+.panel ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  line-height: 1.9;
+  font-size: 14px;
+}
+
+.panel .cta {
+  font-weight: bold;
+  margin: 0;
+  animation: pulse 1.6s infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.hearts {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%) translateX(-90px);
+  display: flex;
+  gap: 2px;
+  transition: filter 0.1s;
+}
+
+.hunger {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%) translateX(90px);
+  display: flex;
+  gap: 2px;
+}
+
+.hearts.hurt {
+  filter: brightness(1.8) sepia(1) hue-rotate(-40deg);
+}
+
+.heart {
+  width: 16px;
+  height: 16px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
+  position: relative;
+}
+
+.heart.full::after {
+  content: '♥';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  line-height: 1;
+  color: #e83030;
+}
+
+.drumstick {
+  width: 16px;
+  height: 16px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 2px;
+  position: relative;
+}
+
+.drumstick.full::after {
+  content: '🍗';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.slot .count {
+  position: absolute;
+  right: 3px;
+  bottom: 1px;
+  font-size: 11px;
+  font-weight: bold;
+  text-shadow: 1px 1px 0 #000;
+}
+
+.slot.empty {
+  opacity: 0.85;
+}
+
+.break-overlay {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 52px;
+  height: 52px;
+  transform: translate(-50%, -50%) scale(1);
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.05s, opacity 0.05s;
+}
+
+.inv-panel {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 15, 30, 0.72);
+  pointer-events: auto;
+  cursor: default;
+}
+
+.inv-panel h2 {
+  margin: 0 0 4px;
+  letter-spacing: 2px;
+  font-size: 18px;
+}
+
+.inv-hint {
+  margin: 0 0 10px;
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+.inv-body {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.inv-right {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.craft-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 6px;
+}
+
+.craft-label {
+  font-size: 11px;
+  opacity: 0.8;
+  letter-spacing: 1px;
+}
+
+.craft-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 48px);
+  gap: 4px;
+}
+
+.slot.craft-out {
+  border-color: rgba(255, 220, 120, 0.6);
+}
+
+.held-cursor {
+  position: fixed;
+  display: none;
+  align-items: flex-end;
+  gap: 2px;
+  pointer-events: none;
+  z-index: 1000;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
+}
+
+.inv-grid {
+  display: grid;
+  grid-template-columns: repeat(9, 48px);
+  gap: 4px;
+  padding: 6px;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.inv-hotbar {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 6px;
+}
+
+.mode-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 10px;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 4px;
+  font-size: 12px;
+  letter-spacing: 1px;
+}
+
+.mode-badge.creative {
+  color: #7ee8ff;
+  border: 1px solid rgba(126, 232, 255, 0.4);
+}
+
+.chat {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 72px;
+  padding: 0 12px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.chat.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.chat-log {
+  max-height: 96px;
+  overflow-y: auto;
+  margin-bottom: 6px;
+}
+
+.chat-line {
+  font-size: 12px;
+  line-height: 1.5;
+  text-shadow: 1px 1px 2px #000;
+  color: #e8e8e8;
+}
+
+.chat-line.err {
+  color: #ff8888;
+}
+
+.chat-input {
+  width: 100%;
+  max-width: 640px;
+  display: block;
+  margin: 0 auto;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 14px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 4px;
+  outline: none;
+}
+
+.chat:not(.open) .chat-input {
+  display: none;
+}
+
+/* ---------- Touch controls (Minecraft PE style) ---------- */
+
+.touch-look {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  touch-action: none;
+}
+
+.touch-on .touch-look {
+  pointer-events: auto;
+}
+
+.touch-ui {
+  display: none;
+}
+
+.touch-on .touch-ui {
+  display: block;
+}
+
+.touch-ui > * {
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.joystick {
+  position: absolute;
+  left: 22px;
+  bottom: 86px;
+  width: 148px;
+  height: 148px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+}
+
+.knob {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 60px;
+  height: 60px;
+  margin: -30px 0 0 -30px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.35);
+  border: 2px solid rgba(255, 255, 255, 0.55);
+}
+
+.tbtn {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.35);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-size: 24px;
+}
+
+.tbtn.pressed {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.tbtn.jump {
+  right: 26px;
+  bottom: 118px;
+  width: 84px;
+  height: 84px;
+}
+
+.tbtn.sneak {
+  right: 126px;
+  bottom: 92px;
+  width: 56px;
+  height: 56px;
+  font-size: 18px;
+}
+
+.tbtn-col {
+  position: absolute;
+  top: 42px;
+  right: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tbtn.small {
+  position: static;
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  font-size: 17px;
+}
+
+/* Hotbar is tappable/clickable to select the active slot. */
+.hotbar {
+  pointer-events: auto;
+}
+
+.slot canvas {
+  width: 82%;
+  height: 82%;
+  image-rendering: pixelated;
+}
+
+/* Tighter HUD on narrow (phone) screens so 9 slots + hearts still fit. */
+@media (max-width: 700px) {
+  .slot {
+    width: 34px;
+    height: 34px;
+  }
+
+  .slot .num {
+    font-size: 8px;
+  }
+
+  .slot .count {
+    font-size: 9px;
+  }
+
+  .hearts {
+    transform: translateX(-50%) translateX(-78px);
+  }
+
+  .hunger {
+    transform: translateX(-50%) translateX(78px);
+  }
+
+  .heart,
+  .drumstick {
+    width: 13px;
+    height: 13px;
+  }
+
+  .debug {
+    font-size: 9px;
+  }
+
+  .panel {
+    padding: 16px 20px;
+  }
+
+  .panel ul {
+    font-size: 11px;
+  }
+
+  .inv-grid {
+    grid-template-columns: repeat(9, 34px);
+  }
+
+  .craft-grid {
+    grid-template-columns: repeat(2, 34px);
+  }
+}

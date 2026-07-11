@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(lsof -nP -iTCP -sTCP:LISTEN)",
+      "Bash(awk '{print $1, $2, $9}')",
+      "Bash(ps -p 67030 -o command=)",
+      "Bash(ps -p 6476 -o command=)",
+      "Bash(curl -s http://localhost:5173)"
+    ]
+  }
+}
