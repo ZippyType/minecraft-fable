@@ -1,4 +1,5 @@
-import { BLOCK_HARDNESS, isBreakable } from '../world/blocks.js';
+import { BLOCK_HARDNESS, isBreakable, effectiveTool } from '../world/blocks.js';
+import { toolType, toolSpeed } from '../world/items.js';
 
 export class BlockBreaker {
   constructor(world, inventory, drops) {
@@ -53,7 +54,12 @@ export class BlockBreaker {
       return 'broken';
     }
     const hardness = BLOCK_HARDNESS[target.id] ?? 2;
-    this.progress += dt / hardness;
+    // Holding the right tool class (pickaxe on stone, axe on wood, shovel
+    // on dirt/sand) multiplies mining speed; anything else digs at hand speed.
+    const held = this.inventory.selectedId();
+    const heldTool = toolType(held);
+    const speed = heldTool && heldTool === effectiveTool(target.id) ? toolSpeed(held) : 1;
+    this.progress += (dt * speed) / hardness;
     if (this.progress < 1) return this.progress;
 
     const id = target.id;

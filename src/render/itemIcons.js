@@ -1,15 +1,50 @@
 const TILE = 16;
 const COLS = 4;
+const ROWS = 5;
 
 function px(ctx, x, y, w, h, c) {
   ctx.fillStyle = c;
   ctx.fillRect(x, y, w, h);
 }
 
+// Head colors per tool tier; handles are always wood.
+const TIER = {
+  wood: { face: '#b8862d', edge: '#8b6914' },
+  stone: { face: '#9a9a9a', edge: '#6e6e6e' },
+  iron: { face: '#e8e8e8', edge: '#a8a8a8' },
+};
+const HANDLE = '#8b5a2b';
+
+function sword(c, t) {
+  px(c, 7, 1, 2, 9, t.face);
+  px(c, 8, 1, 1, 9, t.edge);
+  px(c, 5, 10, 6, 2, '#4a3520');
+  px(c, 7, 12, 2, 3, HANDLE);
+}
+
+function pickaxe(c, t) {
+  px(c, 3, 2, 10, 2, t.face);
+  px(c, 3, 4, 2, 3, t.edge);
+  px(c, 11, 4, 2, 3, t.edge);
+  px(c, 7, 4, 2, 10, HANDLE);
+}
+
+function axe(c, t) {
+  px(c, 4, 1, 6, 3, t.face);
+  px(c, 4, 4, 4, 3, t.edge);
+  px(c, 8, 4, 2, 11, HANDLE);
+}
+
+function shovel(c, t) {
+  px(c, 7, 1, 2, 8, HANDLE);
+  px(c, 5, 9, 6, 4, t.face);
+  px(c, 6, 13, 4, 2, t.edge);
+}
+
 export function createItemIcons() {
   const canvas = document.createElement('canvas');
   canvas.width = COLS * TILE;
-  canvas.height = TILE * 2;
+  canvas.height = ROWS * TILE;
   const ctx = canvas.getContext('2d');
 
   const draw = (icon, fn) => {
@@ -60,6 +95,20 @@ export function createItemIcons() {
     px(c, 7, 3, 2, 12, '#8b6914');
     px(c, 6, 4, 4, 10, '#a08020');
   });
+
+  // Tools: icons 8-19, one row of tiers (wood, stone, iron) per tool kind.
+  draw(8, (c) => sword(c, TIER.wood));
+  draw(9, (c) => sword(c, TIER.stone));
+  draw(10, (c) => sword(c, TIER.iron));
+  draw(11, (c) => pickaxe(c, TIER.wood));
+  draw(12, (c) => pickaxe(c, TIER.stone));
+  draw(13, (c) => pickaxe(c, TIER.iron));
+  draw(14, (c) => axe(c, TIER.wood));
+  draw(15, (c) => axe(c, TIER.stone));
+  draw(16, (c) => axe(c, TIER.iron));
+  draw(17, (c) => shovel(c, TIER.wood));
+  draw(18, (c) => shovel(c, TIER.stone));
+  draw(19, (c) => shovel(c, TIER.iron));
 
   return canvas;
 }

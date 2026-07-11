@@ -113,8 +113,17 @@ export function runCommand(line, ctx) {
     return `Gave ${count} ${defName}`;
   }
 
+  if (cmd === 'recipes') {
+    return (
+      'Tools use wood / stone / iron ore (m) + sticks (s) in the 2x2 grid: ' +
+      'sword = m over s. pickaxe = m m top, s bottom-left. ' +
+      'axe = m m top, m s bottom. shovel = m top-left, s s bottom. ' +
+      'Sticks: 2 wood stacked vertically.'
+    );
+  }
+
   if (cmd === 'help') {
-    return 'Commands: /give <item> [count], /gamemode <mode>, /time set <day|night>, /spawn <mob>';
+    return 'Commands: /give <item> [count], /gamemode <mode>, /time set <day|night>, /spawn <mob>, /recipes';
   }
 
   return `Unknown command: /${cmd}. Try /help`;
