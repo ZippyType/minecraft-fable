@@ -51,6 +51,14 @@ export class HUD {
 
     this.invPanel = el('div', 'inv-panel');
     this.invPanel.innerHTML = '<h2>Inventory</h2><p class="inv-hint">Click to move · Shift-click to quick-move · Craft on the left</p>';
+    // Touch devices have no E/Escape key, so the panel needs its own way out.
+    const invClose = el('div', 'panel-close');
+    invClose.textContent = '✕';
+    invClose.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.toggleInventory();
+    });
+    this.invPanel.appendChild(invClose);
 
     const body = el('div', 'inv-body');
     this.craftArea = el('div', 'craft-area');
@@ -115,7 +123,110 @@ export class HUD {
       this.heldCursor.style.left = `${e.clientX + 12}px`;
       this.heldCursor.style.top = `${e.clientY + 12}px`;
     });
+    this.bindTouch();
     this.refresh();
+  }
+
+  // Touch support for the inventory. The slots' click handlers are not
+  // enough on touch: a drag never synthesizes a click, and iOS Safari is
+  // unreliable about synthesizing them on plain divs at all. Taps are
+  // handled on touchend (pick up / place, like a click), and moving the
+  // finger past a small slop lifts the stack so it can be dragged and
+  // dropped PE-style.
+  bindTouch() {
+    const SLOP = 12;
+    const slotAt = (t) => {
+      const el = document.elementFromPoint(t.clientX, t.clientY)?.closest('.slot');
+      if (!el || !this.invPanel.contains(el)) return null;
+      return { kind: el.dataset.kind, index: Number(el.dataset.index) };
+    };
+
+    this.touchDrag = null;
+
+    this.invPanel.addEventListener('touchstart', (e) => {
+      if (e.target.closest('.panel-close')) return; // let its click fire
+      e.preventDefault(); // no synthetic mouse events — touch owns the panel
+      if (this.touchDrag) return; // one finger drives the inventory
+      const t = e.changedTouches[0];
+      const startEl = e.target.closest('.slot');
+      this.touchDrag = {
+        id: t.identifier,
+        start: startEl ? { kind: startEl.dataset.kind, index: Number(startEl.dataset.index) } : null,
+        x: t.clientX,
+        y: t.clientY,
+        moved: 0,
+        picked: false,
+      };
+    }, { passive: false });
+
+    this.invPanel.addEventListener('touchmove', (e) => {
+      const drag = this.touchDrag;
+      if (!drag) return;
+      for (const t of e.changedTouches) {
+        if (t.identifier !== drag.id) continue;
+        e.preventDefault();
+        drag.moved += Math.abs(t.clientX - drag.x) + Math.abs(t.clientY - drag.y);
+        drag.x = t.clientX;
+        drag.y = t.clientY;
+        if (!drag.picked && !this.held && drag.moved > SLOP && drag.start && drag.start.kind !== 'craft-out') {
+          const kind = drag.start.kind === 'craft' ? 'craft' : 'inv';
+          this.held = kind === 'craft'
+            ? this.inventory.moveCraftClick(drag.start.index, null)
+            : this.inventory.moveSlotClick(drag.start.index, null);
+          drag.picked = !!this.held;
+          this.updateCraftOutput();
+          this.refresh();
+        }
+        if (this.held) this.positionHeldCursor(t.clientX, t.clientY);
+      }
+    }, { passive: false });
+
+    const endDrag = (e) => {
+      const drag = this.touchDrag;
+      if (!drag) return;
+      for (const t of e.changedTouches) {
+        if (t.identifier !== drag.id) continue;
+        e.preventDefault();
+        this.touchDrag = null;
+        if (drag.picked || (this.held && drag.moved > SLOP)) {
+          // Drop onto the slot under the finger; anywhere else keeps the
+          // stack held so a later tap can still place it.
+          const target = slotAt(t);
+          if (target) this.dropHeld(target.kind, target.index);
+        } else if (drag.moved <= SLOP && drag.start) {
+          this.slotClick(drag.start.kind, drag.start.index, false);
+          if (this.held) this.positionHeldCursor(t.clientX, t.clientY);
+        }
+        if (!this.held) this.heldCursor.style.display = 'none';
+      }
+    };
+    this.invPanel.addEventListener('touchend', endDrag, { passive: false });
+    this.invPanel.addEventListener('touchcancel', endDrag, { passive: false });
+
+    // In-game hotbar: tap selects the slot without relying on a synthetic click.
+    this.hotbar.addEventListener('touchend', (e) => {
+      const slotEl = e.target.closest('.slot');
+      if (!slotEl || this.inventoryOpen) return;
+      e.preventDefault();
+      this.slotClick('hotbar', Number(slotEl.dataset.index), false);
+    }, { passive: false });
+  }
+
+  dropHeld(kind, index) {
+    if (!this.held || kind === 'craft-out') return;
+    if (kind === 'hotbar') kind = 'inv';
+    this.held = kind === 'craft'
+      ? this.inventory.moveCraftClick(index, this.held)
+      : this.inventory.moveSlotClick(index, this.held);
+    this.updateCraftOutput();
+    this.refresh();
+  }
+
+  positionHeldCursor(x, y) {
+    // Above the finger so the stack isn't hidden underneath it.
+    this.heldCursor.style.display = 'flex';
+    this.heldCursor.style.left = `${x - 20}px`;
+    this.heldCursor.style.top = `${y - 56}px`;
   }
 
   makeSlot(index, showKey, kind) {

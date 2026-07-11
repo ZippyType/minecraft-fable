@@ -113,6 +113,20 @@ export function runCommand(line, ctx) {
     return `Gave ${count} ${defName}`;
   }
 
+  if (cmd === 'touch') {
+    if (!ctx.touch) return 'Touch controls not available here.';
+    const arg = parts[1];
+    if (arg === 'on') {
+      ctx.touch.setEnabled(true);
+      return 'Touch controls on';
+    }
+    if (arg === 'off') {
+      ctx.touch.setEnabled(false);
+      return 'Touch controls off';
+    }
+    return 'Usage: /touch on|off';
+  }
+
   if (cmd === 'recipes') {
     return (
       'Tools use wood / stone / iron ore (m) + sticks (s) in the 2x2 grid: ' +
@@ -123,7 +137,7 @@ export function runCommand(line, ctx) {
   }
 
   if (cmd === 'help') {
-    return 'Commands: /give <item> [count], /gamemode <mode>, /time set <day|night>, /spawn <mob>, /recipes';
+    return 'Commands: /give <item> [count], /gamemode <mode>, /time set <day|night>, /spawn <mob>, /recipes, /touch on|off';
   }
 
   return `Unknown command: /${cmd}. Try /help`;

@@ -18,6 +18,7 @@ export class TouchControls {
     this.input = input;
     this.handlers = handlers;
     this.enabled = false;
+    this.userDisabled = false;
 
     // Full-screen look/act layer, painted (and hit-tested) below every other
     // HUD element so panels and buttons take priority.
@@ -56,10 +57,38 @@ export class TouchControls {
   }
 
   enable() {
-    if (this.enabled) return;
+    if (this.enabled || this.userDisabled) return;
     this.enabled = true;
     this.input.touchMode = true; // pointer lock is pointless on touch
     this.root.classList.add('touch-on');
+  }
+
+  // Manual override (the /touch chat command). Detection keys off pointer
+  // capabilities, not the user agent, so e.g. Safari's "Request Desktop
+  // Website" doesn't hide the controls — this does.
+  setEnabled(on) {
+    if (on) {
+      this.userDisabled = false;
+      this.enable();
+      return;
+    }
+    this.userDisabled = true;
+    if (!this.enabled) return;
+    this.enabled = false;
+    this.input.touchMode = false;
+    this.root.classList.remove('touch-on');
+    clearTimeout(this.breakTimer);
+    this.stickId = null;
+    this.lookId = null;
+    this.lookState = null;
+    this.knob.style.transform = '';
+    this.input.touchF = 0;
+    this.input.touchS = 0;
+    this.input.touchSprint = false;
+    if (this.input.breaking) {
+      this.input.breaking = false;
+      this.handlers.stopBreak?.();
+    }
   }
 
   bind() {
