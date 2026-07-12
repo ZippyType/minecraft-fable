@@ -67,8 +67,8 @@ export class Player {
     const yaw = input.yaw;
     // Keyboard is digital, the touch joystick analog — combine both and cap
     // the magnitude at 1 so partial stick tilt walks slower.
-    const f = (input.isDown('KeyW') ? 1 : 0) - (input.isDown('KeyS') ? 1 : 0) + input.touchF;
-    const s = (input.isDown('KeyD') ? 1 : 0) - (input.isDown('KeyA') ? 1 : 0) + input.touchS;
+    const f = (input.isAction('forward') ? 1 : 0) - (input.isAction('back') ? 1 : 0) + input.touchF;
+    const s = (input.isAction('right') ? 1 : 0) - (input.isAction('left') ? 1 : 0) + input.touchS;
     let mx = -Math.sin(yaw) * f + Math.cos(yaw) * s;
     let mz = -Math.cos(yaw) * f - Math.sin(yaw) * s;
     const len = Math.hypot(mx, mz);
@@ -80,8 +80,8 @@ export class Player {
     const moving = len > 0.1;
     const inWater =
       world.getBlock(Math.floor(this.pos.x), Math.floor(this.pos.y + 1), Math.floor(this.pos.z)) === BLOCK.WATER;
-    const shift = input.isDown('ShiftLeft') || input.isDown('ShiftRight');
-    const space = input.isDown('Space');
+    const shift = input.isAction('sprint');
+    const space = input.isAction('jump');
 
     let speed = this.fly ? 14 : shift || input.touchSprint ? 7 : 4.5;
     if (inWater && !this.fly) speed *= 0.5;

@@ -114,17 +114,13 @@ export function runCommand(line, ctx) {
   }
 
   if (cmd === 'touch') {
-    if (!ctx.touch) return 'Touch controls not available here.';
+    if (!ctx.settings) return 'Touch controls not available here.';
     const arg = parts[1];
-    if (arg === 'on') {
-      ctx.touch.setEnabled(true);
-      return 'Touch controls on';
+    if (arg === 'on' || arg === 'off' || arg === 'auto') {
+      ctx.settings.set('touchMode', arg);
+      return `Touch controls: ${arg}`;
     }
-    if (arg === 'off') {
-      ctx.touch.setEnabled(false);
-      return 'Touch controls off';
-    }
-    return 'Usage: /touch on|off';
+    return 'Usage: /touch on|off|auto';
   }
 
   if (cmd === 'recipes') {
@@ -137,7 +133,7 @@ export function runCommand(line, ctx) {
   }
 
   if (cmd === 'help') {
-    return 'Commands: /give <item> [count], /gamemode <mode>, /time set <day|night>, /spawn <mob>, /recipes, /touch on|off';
+    return 'Commands: /give <item> [count], /gamemode <mode>, /time set <day|night>, /spawn <mob>, /recipes, /touch on|off|auto';
   }
 
   return `Unknown command: /${cmd}. Try /help`;

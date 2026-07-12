@@ -99,6 +99,7 @@ export class HUD {
     this.heldCursor.append(this.heldCursorCanvas, this.heldCount);
     this.invPanel.appendChild(this.heldCursor);
 
+    this.onSettingsOpen = null;
     this.overlay = el('div', 'overlay');
     this.overlay.innerHTML = `
       <div class="panel">
@@ -110,7 +111,18 @@ export class HUD {
           <li><b>E</b> inventory + crafting &nbsp; <b>T</b> chat · <b>/creative</b></li>
         </ul>
         <p class="cta">Click to play</p>
+        <div class="overlay-settings">⚙ Settings</div>
       </div>`;
+    const settingsBtn = this.overlay.querySelector('.overlay-settings');
+    settingsBtn.addEventListener('click', (e) => {
+      e.stopPropagation(); // don't let the overlay's resume-click fire
+      this.onSettingsOpen?.();
+    });
+    settingsBtn.addEventListener('touchend', (e) => {
+      e.preventDefault(); // suppress the synthetic click
+      e.stopPropagation();
+      this.onSettingsOpen?.();
+    }, { passive: false });
 
     root.append(this.hearts, this.hunger, this.crosshair, this.breakOverlay, this.modeBadge, this.selectedName, this.hotbar, this.debug, this.invPanel, this.overlay);
     document.body.appendChild(root);

@@ -1,7 +1,11 @@
+// Base radians-per-pixel for mouse look; scaled by settings.sensitivity.
+const MOUSE_SENSITIVITY = 0.0032;
+
 export class Input {
-  constructor(canvas, handlers = {}) {
+  constructor(canvas, handlers = {}, settings) {
     this.canvas = canvas;
     this.handlers = handlers;
+    this.settings = settings;
     this.keys = new Set();
     this.yaw = 0;
     this.pitch = 0;
@@ -16,7 +20,8 @@ export class Input {
     this.touchSprint = false;
 
     document.addEventListener('keydown', (e) => {
-      if (this.paused && e.code !== 'KeyE' && e.code !== 'Escape' && e.code !== 'KeyT') return;
+      const binds = this.settings.bindings;
+      if (this.paused && e.code !== binds.inventory && e.code !== 'Escape' && e.code !== binds.chat) return;
       if (e.code === 'Escape' && this.fallback && this.locked) {
         this.releaseLock();
         return;
@@ -27,9 +32,9 @@ export class Input {
         const n = Number(e.code.slice(5));
         if (n >= 1 && n <= 9) handlers.selectSlot?.(n - 1);
       }
-      if (e.code === 'KeyE') handlers.toggleInventory?.();
-      if (e.code === 'KeyT') handlers.toggleChat?.();
-      if (e.code === 'KeyF') handlers.toggleFly?.();
+      if (e.code === binds.inventory) handlers.toggleInventory?.();
+      if (e.code === binds.chat) handlers.toggleChat?.();
+      if (e.code === binds.fly) handlers.toggleFly?.();
     });
     document.addEventListener('keyup', (e) => this.keys.delete(e.code));
     window.addEventListener('blur', () => {
@@ -39,8 +44,9 @@ export class Input {
 
     document.addEventListener('mousemove', (e) => {
       if (!this.locked || this.paused) return;
-      this.yaw -= e.movementX * 0.0022;
-      this.pitch = Math.max(-1.55, Math.min(1.55, this.pitch - e.movementY * 0.0022));
+      const s = MOUSE_SENSITIVITY * this.settings.sensitivity;
+      this.yaw -= e.movementX * s;
+      this.pitch = Math.max(-1.55, Math.min(1.55, this.pitch - e.movementY * s));
     });
     document.addEventListener('mousedown', (e) => {
       if (!this.locked || this.paused) return;
@@ -90,6 +96,30 @@ export class Input {
 
   isDown(code) {
     return this.keys.has(code);
+  }
+
+  // True while the key bound to the named action is held.
+  isAction(name) {
+    const code = this.settings.bindings[name];
+    if (!code) return false;
+    if (this.keys.has(code)) return true;
+    // A left-side modifier binding accepts its right-side twin too.
+    if (code === 'ShiftLeft') return this.keys.has('ShiftRight');
+    if (code === 'ControlLeft') return this.keys.has('ControlRight');
+    if (code === 'AltLeft') return this.keys.has('AltRight');
+    return false;
+  }
+
+  // Touch buttons press actions, not raw key codes, so rebinding a key
+  // never breaks them.
+  pressAction(name) {
+    const code = this.settings.bindings[name];
+    if (code) this.keys.add(code);
+  }
+
+  releaseAction(name) {
+    const code = this.settings.bindings[name];
+    if (code) this.keys.delete(code);
   }
 
   releaseLock() {
