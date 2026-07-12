@@ -123,6 +123,13 @@ export function runCommand(line, ctx) {
     return 'Usage: /touch on|off|auto';
   }
 
+  if (cmd === 'reset') {
+    if (!ctx.resetWorld) return 'Reset not available here.';
+    if (parts[1] !== 'confirm') return 'This wipes the saved world! Type /reset confirm';
+    ctx.resetWorld();
+    return 'Resetting world…';
+  }
+
   if (cmd === 'recipes') {
     return (
       'Tools use wood / stone / iron ore (m) + sticks (s) in the 2x2 grid: ' +
@@ -133,7 +140,7 @@ export function runCommand(line, ctx) {
   }
 
   if (cmd === 'help') {
-    return 'Commands: /give <item> [count], /gamemode <mode>, /time set <day|night>, /spawn <mob>, /recipes, /touch on|off|auto';
+    return 'Commands: /give <item> [count], /gamemode <mode>, /time set <day|night>, /spawn <mob>, /recipes, /touch on|off|auto, /reset';
   }
 
   return `Unknown command: /${cmd}. Try /help`;
