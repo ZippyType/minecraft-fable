@@ -16,6 +16,8 @@ import { raycast } from './player/raycast.js';
 import { HUD } from './ui/hud.js';
 import { Chat } from './ui/chat.js';
 import { TouchControls } from './ui/touch.js';
+import { SettingsMenu } from './ui/settingsMenu.js';
+import { Settings } from './game/settings.js';
 import { MobManager } from './entities/mobs.js';
 import { GAMEMODE } from './game/gamemode.js';
 import { runCommand } from './game/commands.js';
@@ -44,6 +46,7 @@ const waterMat = new THREE.MeshLambertMaterial({
   side: THREE.DoubleSide,
 });
 
+const settings = new Settings();
 const terrain = new Terrain(20260703);
 const world = new World(scene, terrain, solidMat, waterMat);
 const player = new Player(world.findSpawn());
@@ -158,7 +161,7 @@ function setPaused(paused) {
 }
 
 function uiBlocking() {
-  return hud.inventoryOpen || chat.open;
+  return hud.inventoryOpen || chat.open || settingsMenu.open;
 }
 
 // Returns the damage dealt by a single melee hit, factoring in the held item
@@ -174,11 +177,11 @@ const input = new Input(renderer.domElement, {
   scrollSlot: (d) => hud.setSelected((inventory.selected + d + 9) % 9),
   toggleFly: () => { if (isCreative()) player.fly = !player.fly; },
   toggleInventory: () => {
-    if (chat.open) return;
+    if (chat.open || settingsMenu.open) return;
     hud.toggleInventory();
   },
   toggleChat: () => {
-    if (hud.inventoryOpen) return;
+    if (hud.inventoryOpen || settingsMenu.open) return;
     chat.toggle();
     setPaused(chat.open);
   },
@@ -190,7 +193,7 @@ const input = new Input(renderer.domElement, {
     if (locked && !uiBlocking()) hud.hideOverlay();
     else if (!locked && !uiBlocking()) hud.showOverlay('Paused');
   },
-});
+}, settings);
 
 chat.onSubmit = (msg) => {
   const result = runCommand(msg, {
@@ -201,10 +204,7 @@ chat.onSubmit = (msg) => {
     setGamemode,
     inventory,
     hud,
-    // `touch` is declared below; by the time a command runs it exists.
-    get touch() {
-      return touch;
-    },
+    settings,
   });
   chat.logMessage(result);
 };
@@ -226,6 +226,12 @@ const touch = new TouchControls(document.querySelector('.hud'), input, {
     if (!hud.inventoryOpen) chat.toggle(true);
   },
   pause: () => input.releaseLock(),
+}, settings);
+
+const settingsMenu = new SettingsMenu(document.querySelector('.hud'), settings);
+hud.onSettingsOpen = () => settingsMenu.openMenu();
+settings.onChange((field) => {
+  if (field === 'touchMode') touch.setMode(settings.touchMode);
 });
 
 hud.onResume = () => input.requestLock();
@@ -341,4 +347,4 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-window.game = { world, player, input, hud, inventory, mobs, camera, terrain, sky, chat, drops, breaker, touch, setGamemode };
+window.game = { world, player, input, hud, inventory, mobs, camera, terrain, sky, chat, drops, breaker, touch, settings, settingsMenu, setGamemode };

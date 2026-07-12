@@ -9,16 +9,19 @@
 
 const HOLD_TO_BREAK_MS = 350;
 const TAP_SLOP_PX = 12;
-const LOOK_SENSITIVITY = 0.005;
+// Base radians-per-pixel for touch look; scaled by settings.sensitivity.
+const LOOK_SENSITIVITY = 0.007;
 const STICK_DEADZONE = 0.18;
 
 export class TouchControls {
-  constructor(root, input, handlers) {
+  constructor(root, input, handlers, settings) {
     this.root = root;
     this.input = input;
     this.handlers = handlers;
+    this.settings = settings;
     this.enabled = false;
     this.userDisabled = false;
+    this.firstTouchArmed = false;
 
     // Full-screen look/act layer, painted (and hit-tested) below every other
     // HUD element so panels and buttons take priority.
@@ -51,9 +54,7 @@ export class TouchControls {
     this.breakTimer = 0;
 
     this.bind();
-
-    if (window.matchMedia?.('(pointer: coarse)').matches) this.enable();
-    else window.addEventListener('touchstart', () => this.enable(), { once: true, passive: true });
+    this.setMode(settings.touchMode);
   }
 
   enable() {
@@ -63,16 +64,7 @@ export class TouchControls {
     this.root.classList.add('touch-on');
   }
 
-  // Manual override (the /touch chat command). Detection keys off pointer
-  // capabilities, not the user agent, so e.g. Safari's "Request Desktop
-  // Website" doesn't hide the controls — this does.
-  setEnabled(on) {
-    if (on) {
-      this.userDisabled = false;
-      this.enable();
-      return;
-    }
-    this.userDisabled = true;
+  turnOff() {
     if (!this.enabled) return;
     this.enabled = false;
     this.input.touchMode = false;
@@ -88,6 +80,38 @@ export class TouchControls {
     if (this.input.breaking) {
       this.input.breaking = false;
       this.handlers.stopBreak?.();
+    }
+  }
+
+  // Applies the touch-controls setting ('auto' | 'on' | 'off'). Auto keys
+  // off pointer capabilities, not the user agent, so e.g. Safari's
+  // "Request Desktop Website" doesn't hide the controls — 'off' does.
+  setMode(mode) {
+    if (mode === 'on') {
+      this.userDisabled = false;
+      this.enable();
+      return;
+    }
+    if (mode === 'off') {
+      this.turnOff();
+      this.userDisabled = true;
+      return;
+    }
+    // auto: coarse pointers get the controls right away, hybrid devices on
+    // their first real touch.
+    this.userDisabled = false;
+    if (window.matchMedia?.('(pointer: coarse)').matches) {
+      this.enable();
+      return;
+    }
+    this.turnOff();
+    if (!this.firstTouchArmed) {
+      this.firstTouchArmed = true;
+      // Not `once`: the mode can change between touches, so re-check each
+      // time. enable() is idempotent and cheap.
+      window.addEventListener('touchstart', () => {
+        if (this.settings.touchMode === 'auto') this.enable();
+      }, { passive: true });
     }
   }
 
@@ -133,8 +157,9 @@ export class TouchControls {
             clearTimeout(this.breakTimer);
           }
           if (this.lookState === 'look' || this.lookState === 'break') {
-            this.input.yaw -= dx * LOOK_SENSITIVITY;
-            this.input.pitch = Math.max(-1.55, Math.min(1.55, this.input.pitch - dy * LOOK_SENSITIVITY));
+            const sens = LOOK_SENSITIVITY * this.settings.sensitivity;
+            this.input.yaw -= dx * sens;
+            this.input.pitch = Math.max(-1.55, Math.min(1.55, this.input.pitch - dy * sens));
           }
           handled = true;
         }
@@ -168,11 +193,11 @@ export class TouchControls {
     document.addEventListener('touchcancel', endTouch);
 
     this.pressButton('.jump',
-      () => this.input.keys.add('Space'),
-      () => this.input.keys.delete('Space'));
+      () => this.input.pressAction('jump'),
+      () => this.input.releaseAction('jump'));
     this.pressButton('.sneak',
-      () => this.input.keys.add('ShiftLeft'),
-      () => this.input.keys.delete('ShiftLeft'));
+      () => this.input.pressAction('sprint'),
+      () => this.input.releaseAction('sprint'));
     this.pressButton('.inv-btn', () => this.handlers.toggleInventory?.());
     this.pressButton('.chat-btn', () => this.handlers.toggleChat?.());
     this.pressButton('.pause-btn', () => this.handlers.pause?.());
