@@ -6,7 +6,7 @@ import { Sky } from './render/sky.js';
 import { Terrain } from './world/terrain.js';
 import { World, RENDER_DISTANCE } from './world/world.js';
 import { BLOCK } from './world/blocks.js';
-import { ITEM, isBlock, isFood, foodValue, itemPurpose, meleeBonus } from './world/items.js';
+import { ITEM, isBlock, isItem, isFood, foodValue, itemPurpose, meleeBonus, armorSlot } from './world/items.js';
 import { createItemIcons } from './render/itemIcons.js';
 import { DropManager } from './entities/drops.js';
 import { Player, EYE_HEIGHT } from './player/player.js';
@@ -147,12 +147,18 @@ function placeBlock() {
 
 function useItem() {
   const id = inventory.selectedId();
-  if (!id) return;
-  if (isBlock(id)) {
-    placeBlock();
+  if (!id || isBlock(id)) return;
+  const purpose = itemPurpose(id);
+  if (purpose === 'armor') {
+    const slot = armorSlot(id);
+    if (slot && player.armor[slot] !== id) {
+      player.armor[slot] = id;
+      inventory.removeFromSelected(1);
+      hud.refresh();
+      hud.refreshSelectedName();
+    }
     return;
   }
-  const purpose = itemPurpose(id);
   if (purpose === 'food' && !isCreative()) {
     player.eat(foodValue(id));
     inventory.removeFromSelected(1);
@@ -166,9 +172,11 @@ function useItem() {
     if (id === ITEM.ENDER_PEARL) {
       drops.throwPearl(from, lookDir, player);
       inventory.removeFromSelected(1);
-    } else if (id === ITEM.GUNPOWDER) {
+    } else if (id === ITEM.GUNPOWDER || id === ITEM.TNT_ITEM) {
       drops.throwBomb(from, lookDir);
       inventory.removeFromSelected(1);
+    } else if (id === ITEM.BOW) {
+      drops.shootPlayerArrow(from, lookDir, mobs);
     }
     hud.refresh();
     hud.refreshSelectedName();
@@ -242,6 +250,7 @@ chat.onToggle = (open) => {
 };
 
 const touch = new TouchControls(document.querySelector('.hud'), input, {
+  placeBlock,
   useItem,
   stopBreak: () => breaker.stop(),
   toggleInventory: () => {
@@ -395,6 +404,9 @@ function frame() {
   camera.rotation.set(input.pitch, input.yaw, 0);
 
   world.update(player.pos);
+  scene._cameraX = camera.position.x;
+  scene._cameraY = camera.position.y;
+  scene._cameraZ = camera.position.z;
   sky.update(dt, scene);
   drops.update(dt, player.pos, () => hud.refresh());
 
@@ -423,12 +435,14 @@ function frame() {
       `${fps} FPS  ${gameMode}\n` +
       (isCreative() ? '' : `HP ${player.health}/${player.maxHealth}  Food ${player.hunger}/${player.maxHunger}\n`) +
       `XYZ ${p.x.toFixed(1)} ${p.y.toFixed(1)} ${p.z.toFixed(1)}\n` +
-      `${sky.isDay() ? 'Day' : sky.isNight() ? 'Night' : 'Dusk'}  mobs ${mobs.mobs.length}`
+      `${sky.isDay() ? 'Day' : sky.isNight() ? 'Night' : 'Dusk'}  ${sky.weather}  mobs ${mobs.mobs.length}`
     );
   }
 
   if (player.hurtFlash > 0 && !isCreative()) {
     renderer.domElement.style.filter = 'sepia(0.4) saturate(2) hue-rotate(-30deg)';
+  } else if (sky.thunderFlash > 0) {
+    renderer.domElement.style.filter = `brightness(${1 + sky.thunderFlash * 3})`;
   } else {
     renderer.domElement.style.filter = '';
   }

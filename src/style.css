@@ -744,6 +744,21 @@ canvas {
   transform: scale(0.92);
 }
 
+.tbtn.use-btn {
+  right: 126px;
+  bottom: 22px;
+  width: 56px;
+  height: 56px;
+  font-size: 20px;
+  color: #f4c542;
+  border-color: rgba(244, 197, 66, 0.45);
+}
+
+.tbtn.use-btn.pressed {
+  background: rgba(244, 197, 66, 0.25);
+  transform: scale(0.92);
+}
+
 .tbtn-col {
   position: absolute;
   top: 42px;

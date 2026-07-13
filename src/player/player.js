@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { BLOCK, isSolid } from '../world/blocks.js';
+import { ITEMS } from '../world/items.js';
 
 const HALF_W = 0.3;
 const HEIGHT = 1.8;
@@ -26,11 +27,23 @@ export class Player {
     this.hurtFlash = 0;
     this.dead = false;
     this.creative = false;
+    this.armor = { helmet: null, chest: null, legs: null, boots: null };
+  }
+
+  getArmorProtection() {
+    let total = 0;
+    for (const slot of ['helmet', 'chest', 'legs', 'boots']) {
+      const id = this.armor[slot];
+      if (id) total += ITEMS[id]?.armorValue ?? 0;
+    }
+    return total;
   }
 
   damage(amount) {
     if (this.dead || this.invuln > 0 || this.creative) return;
-    this.health = Math.max(0, this.health - amount);
+    const protection = this.getArmorProtection();
+    const actual = Math.max(1, amount - Math.floor(protection / 2));
+    this.health = Math.max(0, this.health - actual);
     this.invuln = 0.6;
     this.hurtFlash = 0.35;
     if (this.health <= 0) this.dead = true;

@@ -1,12 +1,16 @@
 import * as THREE from 'three';
 
-// Procedurally drawn 4x4 texture atlas of 16px tiles (no image assets needed).
-const ATLAS_TILES = 4;
+// Procedurally drawn 8x8 texture atlas of 16px tiles (no image assets needed).
+const ATLAS_TILES = 8;
 const TILE = 16;
 const SIZE = ATLAS_TILES * TILE;
 
 // Tile layout: 0 grass_top, 1 grass_side, 2 dirt, 3 stone, 4 sand, 5 water,
-// 6 wood_side, 7 wood_top, 8 leaves, 9 coal_ore, 10 iron_ore
+// 6 wood_side, 7 wood_top, 8 leaves, 9 coal_ore, 10 iron_ore,
+// 11 gold_ore, 12 diamond_ore, 13 bedrock, 14 gravel, 15 snow,
+// 16 cactus_side, 17 cactus_top, 18 tnt_side, 19 tnt_top,
+// 20 planks, 21 glass, 22 brick, 23 crafting_table_top,
+// 24 crafting_table_side, 25 furnace_front, 26 furnace_side
 
 // UV rect [u0, v0, u1, v1] for a tile; v1 is the top of the tile image.
 // Slight inset avoids sampling bleed from neighboring tiles.
@@ -90,6 +94,100 @@ export function createAtlas() {
   ); // leaves
   oreFill(9, [42, 42, 46]); // coal
   oreFill(10, [214, 168, 128]); // iron
+  oreFill(11, [230, 200, 40]); // gold
+  oreFill(12, [60, 210, 220]); // diamond
+
+  fill(13, (x, y) => {
+    const v = 40 + rnd(18) + (Math.random() < 0.12 ? -20 : 0);
+    return [v, v, v];
+  }); // bedrock
+
+  fill(14, (x, y) => {
+    const v = 120 + rnd(22);
+    return [v + 4, v, v - 6];
+  }); // gravel
+
+  fill(15, () => [240 + rnd(8), 244 + rnd(8), 255 + rnd(4)]); // snow
+
+  fill(16, (x, y) => {
+    const stripe = x % 4 === 0;
+    const dark = Math.random() < 0.06;
+    return [
+      (dark ? 30 : 50) + rnd(10),
+      (stripe ? 110 : 140) + rnd(14),
+      (dark ? 20 : 36) + rnd(8),
+    ];
+  }); // cactus side
+
+  fill(17, (x, y) => {
+    const dx = x - 7.5, dy = y - 7.5;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    return dist < 5.5
+      ? [50 + rnd(12), 130 + rnd(16), 40 + rnd(10)]
+      : [40 + rnd(10), 110 + rnd(12), 30 + rnd(8)];
+  }); // cactus top
+
+  fill(18, (x, y) => {
+    const stripe = y >= 5 && y <= 10;
+    return stripe
+      ? [220 + rnd(10), 220 + rnd(10), 220 + rnd(10)]
+      : [180 + rnd(16), 40 + rnd(12), 30 + rnd(10)];
+  }); // tnt side
+
+  fill(19, (x, y) => {
+    const cross = (x >= 6 && x <= 9) || (y >= 6 && y <= 9);
+    return cross
+      ? [230 + rnd(12), 210 + rnd(12), 40 + rnd(10)]
+      : [180 + rnd(14), 42 + rnd(12), 32 + rnd(10)];
+  }); // tnt top
+
+  fill(20, (x, y) => {
+    const line = y % 4 === 0;
+    return line
+      ? [140 + rnd(10), 108 + rnd(8), 62 + rnd(6)]
+      : [170 + rnd(12), 130 + rnd(10), 72 + rnd(8)];
+  }); // planks
+
+  fill(21, (x, y) => {
+    const edge = x === 0 || y === 0 || x === 15 || y === 15;
+    return edge
+      ? [180 + rnd(8), 210 + rnd(8), 225 + rnd(6)]
+      : [200 + rnd(6), 228 + rnd(6), 240 + rnd(4)];
+  }); // glass
+
+  fill(22, (x, y) => {
+    const mx = x % 8, my = y % 4;
+    const mortar = mx === 0 || my === 0;
+    const offset = Math.floor(y / 4) % 2 === 0 ? 0 : 4;
+    const mx2 = (x + offset) % 8;
+    const mortar2 = mx2 === 0 || my === 0;
+    return mortar2
+      ? [160 + rnd(10), 156 + rnd(10), 148 + rnd(8)]
+      : [165 + rnd(16), 55 + rnd(12), 42 + rnd(10)];
+  }); // brick
+
+  fill(23, (x, y) => {
+    const line = x % 4 === 0 || y % 4 === 0;
+    return line
+      ? [120 + rnd(8), 88 + rnd(6), 52 + rnd(5)]
+      : [150 + rnd(10), 112 + rnd(8), 64 + rnd(6)];
+  }); // crafting table top
+
+  fill(24, (x, y) => {
+    const dark = x % 4 === 0 || (x >= 6 && x <= 9 && y >= 4 && y <= 11);
+    return dark
+      ? [84 + rnd(8), 62 + rnd(6), 36 + rnd(5)]
+      : [108 + rnd(10), 82 + rnd(8), 50 + rnd(6)];
+  }); // crafting table side
+
+  fill(25, (x, y) => {
+    const opening = x >= 4 && x <= 11 && y >= 5 && y <= 12;
+    return opening
+      ? [30 + rnd(10), 28 + rnd(10), 26 + rnd(8)]
+      : stonePx();
+  }); // furnace front
+
+  fill(26, stonePx); // furnace side
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.magFilter = THREE.NearestFilter;

@@ -1,7 +1,7 @@
 // Minecraft PE-style touch controls:
 //   - virtual joystick (bottom-left) moves the player, analog speed
 //   - dragging the look layer looks around (no actions on the look layer)
-//   - dedicated action buttons: Attack (sword), Break (pickaxe), Place (block)
+//   - dedicated action buttons: Attack (sword), Break (pickaxe), Place (block), Use (item)
 //   - jump + sneak buttons (bottom-right)
 //   - small buttons for inventory, chat, and pause (top-right)
 // Enabled automatically on coarse-pointer devices (phones/tablets), or on
@@ -36,6 +36,7 @@ export class TouchControls {
       <div class="tbtn attack">&#9876;</div>
       <div class="tbtn break-btn">&#9935;</div>
       <div class="tbtn place-btn">&#9632;</div>
+      <div class="tbtn use-btn">&#9999;</div>
       <div class="tbtn jump">&#9650;</div>
       <div class="tbtn sneak">&#9660;</div>
       <div class="tbtn-col">
@@ -55,6 +56,7 @@ export class TouchControls {
     this.tapMoved = 0;
     this.lastAttackTime = 0;
     this.lastPlaceTime = 0;
+    this.lastUseTime = 0;
 
     this.bind();
     this.setMode(settings.touchMode);
@@ -202,12 +204,22 @@ export class TouchControls {
       },
       () => { this.input.breaking = false; this.input.touchBreak = false; this.handlers.stopBreak?.(); });
 
-    // Place button (block): single tap places one block or uses item
+    // Place button (block): single tap places one block.
     this.pressButton('.place-btn',
       () => {
         const now = performance.now();
         if (now - this.lastPlaceTime < BUTTON_COOLDOWN_MS) return;
         this.lastPlaceTime = now;
+        this.handlers.placeBlock?.();
+      },
+      null);
+
+    // Use button (item): uses the selected item, but not blocks.
+    this.pressButton('.use-btn',
+      () => {
+        const now = performance.now();
+        if (now - this.lastUseTime < BUTTON_COOLDOWN_MS) return;
+        this.lastUseTime = now;
         this.handlers.useItem?.();
       },
       null);

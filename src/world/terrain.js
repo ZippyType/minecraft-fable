@@ -31,28 +31,73 @@ export class Terrain {
     return (h >>> 0) / 4294967296;
   }
 
+  biomeAt(x, z) {
+    const n = this.noise.noise2(x * 0.003, z * 0.003);
+    if (n > 0.35) return 'desert';
+    if (n < -0.35) return 'snow';
+    const forest = this.noise.noise2(x * 0.008 + 100, z * 0.008 + 100);
+    if (forest > 0.2) return 'forest';
+    return 'plains';
+  }
+
   heightAt(x, z) {
+    const biome = this.biomeAt(x, z);
     const continents = this.fbm2(x * 0.004, z * 0.004, 4);
     const hills = this.fbm2(x * 0.02 + 537.3, z * 0.02 + 941.7, 3);
-    const y = 31 + continents * 20 + hills * 6;
+    let hillAmp = 6;
+    if (biome === 'desert') hillAmp = 2;
+    else if (biome === 'snow') hillAmp = 8;
+    else if (biome === 'forest') hillAmp = 9;
+    const y = 31 + continents * 20 + hills * hillAmp;
     return Math.max(2, Math.min(CHUNK_HEIGHT - 6, Math.round(y)));
   }
 
   // Terrain without trees (trees are overlaid per-chunk in genChunkData).
   baseBlockAt(x, y, z, h = this.heightAt(x, z)) {
     if (y > h) return y <= SEA_LEVEL ? BLOCK.WATER : BLOCK.AIR;
-    if (y === 0) return BLOCK.STONE;
+    if (y === 0) return BLOCK.BEDROCK;
+    if (y === 1) return this.hash2(x, z) < 0.5 ? BLOCK.BEDROCK : BLOCK.STONE;
+
+    const caveNoise = this.noiseOre.noise3(x * 0.03, y * 0.05, z * 0.03);
+    const caveNoise2 = this.noiseOre.noise3(x * 0.06 + 500, y * 0.08 + 500, z * 0.06 + 500);
+    if (y > 1 && y < h - 1 && Math.abs(caveNoise) < 0.04 && Math.abs(caveNoise2) < 0.06) {
+      return BLOCK.AIR;
+    }
+    const roomNoise = this.noise.noise3(x * 0.01, y * 0.015, z * 0.01);
+    if (y > 2 && y < h - 2 && roomNoise > 0.7) {
+      return BLOCK.AIR;
+    }
+
+    const biome = this.biomeAt(x, z);
     const beach = h <= SEA_LEVEL + 1;
-    if (y === h) return beach ? BLOCK.SAND : BLOCK.GRASS;
-    if (y > h - 4) return beach ? BLOCK.SAND : BLOCK.DIRT;
+    if (y === h) {
+      if (beach) return BLOCK.SAND;
+      if (biome === 'desert') return BLOCK.SAND;
+      if (biome === 'snow') return BLOCK.SNOW;
+      return BLOCK.GRASS;
+    }
+    if (y > h - 4) {
+      if (beach || biome === 'desert') return BLOCK.SAND;
+      if (biome === 'snow') return BLOCK.SNOW;
+      return BLOCK.DIRT;
+    }
     const n = this.noiseOre.noise3(x * 0.16, y * 0.16, z * 0.16);
     if (n > 0.52) return BLOCK.COAL_ORE;
     if (y < 24 && n < -0.55) return BLOCK.IRON_ORE;
+    if (y < 20 && n > 0.58) return BLOCK.GOLD_ORE;
+    if (y < 12 && n < -0.60) return BLOCK.DIAMOND_ORE;
+    const gn = this.noiseOre.noise3(x * 0.1 + 500, y * 0.1 + 500, z * 0.1 + 500);
+    if (y <= SEA_LEVEL + 2 && Math.abs(y - SEA_LEVEL) <= 2 && gn > 0.45) return BLOCK.GRAVEL;
     return BLOCK.STONE;
   }
 
   treeAt(x, z) {
-    if (this.hash2(x, z) > 0.007) return false;
+    const biome = this.biomeAt(x, z);
+    let threshold = 0.007;
+    if (biome === 'desert') return false;
+    if (biome === 'forest') threshold = 0.015;
+    else if (biome === 'snow') threshold = 0.004;
+    if (this.hash2(x, z) > threshold) return false;
     const h = this.heightAt(x, z);
     return h > SEA_LEVEL + 1 && h < CHUNK_HEIGHT - 10;
   }

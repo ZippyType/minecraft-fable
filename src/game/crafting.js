@@ -31,17 +31,70 @@ const RECIPES = [
     ],
     out: { id: ITEM.STICK, count: 2 },
   },
+  {
+    grid: [
+      [ITEM.STICK, ITEM.STICK],
+      [ITEM.STICK, ITEM.STICK],
+    ],
+    out: { id: ITEM.ARROW, count: 4 },
+  },
+  {
+    grid: [
+      [ITEM.STICK, ITEM.STICK],
+      [ITEM.STICK, ITEM.BONE],
+    ],
+    out: { id: ITEM.BOW, count: 1 },
+  },
+  {
+    grid: [
+      [ITEM.RAW_STEAK, BLOCK.COAL_ORE],
+      [0, 0],
+    ],
+    out: { id: ITEM.COOKED_STEAK, count: 1 },
+  },
+  {
+    grid: [
+      [ITEM.RAW_CHICKEN, BLOCK.COAL_ORE],
+      [0, 0],
+    ],
+    out: { id: ITEM.COOKED_CHICKEN, count: 1 },
+  },
+  {
+    grid: [
+      [ITEM.RAW_LAMB, BLOCK.COAL_ORE],
+      [0, 0],
+    ],
+    out: { id: ITEM.COOKED_LAMB, count: 1 },
+  },
+  {
+    grid: [
+      [ITEM.LEATHER_HELMET, 0],
+      [ITEM.LEATHER_LEGS, 0],
+    ],
+    out: { id: ITEM.LEATHER_CHEST, count: 1 },
+  },
+  {
+    grid: [
+      [ITEM.IRON_HELMET, 0],
+      [ITEM.IRON_LEGS, 0],
+    ],
+    out: { id: ITEM.IRON_CHEST, count: 1 },
+  },
+  {
+    grid: [
+      [ITEM.DIAMOND_HELMET, 0],
+      [ITEM.DIAMOND_LEGS, 0],
+    ],
+    out: { id: ITEM.DIAMOND_CHEST, count: 1 },
+  },
 ];
 
-// Tool recipes, one tier per material (wood / stone / iron ore). The 2x2
-// shapes echo the classic 3x3 recipes as closely as they fit (m = material,
-// s = stick):
-//   sword    m .    pickaxe  m m    axe  m m    shovel  m .
-//            s .             s .         m s           s s
 const TOOL_TIERS = [
   { m: BLOCK.WOOD, sword: ITEM.WOODEN_SWORD, pickaxe: ITEM.WOODEN_PICKAXE, axe: ITEM.WOODEN_AXE, shovel: ITEM.WOODEN_SHOVEL },
   { m: BLOCK.STONE, sword: ITEM.STONE_SWORD, pickaxe: ITEM.STONE_PICKAXE, axe: ITEM.STONE_AXE, shovel: ITEM.STONE_SHOVEL },
   { m: BLOCK.IRON_ORE, sword: ITEM.IRON_SWORD, pickaxe: ITEM.IRON_PICKAXE, axe: ITEM.IRON_AXE, shovel: ITEM.IRON_SHOVEL },
+  { m: BLOCK.GOLD_ORE, sword: ITEM.GOLDEN_SWORD, pickaxe: ITEM.GOLDEN_PICKAXE, axe: ITEM.GOLDEN_AXE, shovel: ITEM.GOLDEN_SHOVEL },
+  { m: BLOCK.DIAMOND_ORE, sword: ITEM.DIAMOND_SWORD, pickaxe: ITEM.DIAMOND_PICKAXE, axe: ITEM.DIAMOND_AXE, shovel: ITEM.DIAMOND_SHOVEL },
 ];
 
 for (const { m, sword, pickaxe, axe, shovel } of TOOL_TIERS) {

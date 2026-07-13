@@ -48,7 +48,10 @@ export class DropManager {
     this.drops = [];
     this.pearls = [];
     this.bombs = [];
+    this.playerArrows = [];
     this.particleGeo = new THREE.BoxGeometry(0.12, 0.12, 0.12);
+    this.arrowGeo = new THREE.BoxGeometry(0.15, 0.15, 0.5);
+    this.arrowMat = new THREE.MeshLambertMaterial({ color: 0x8b6914 });
     this.blockMat = new THREE.MeshLambertMaterial({ map: atlasTexture });
     this.blockGeoCache = new Map();
   }
@@ -183,6 +186,20 @@ export class DropManager {
       pos: from.clone(),
       vel: dir.clone().multiplyScalar(14).add(new THREE.Vector3(0, 1.5, 0)),
       life: 2.5,
+    });
+  }
+
+  shootPlayerArrow(from, dir, mobs) {
+    const mesh = new THREE.Mesh(this.arrowGeo, this.arrowMat);
+    mesh.position.copy(from);
+    mesh.lookAt(from.x + dir.x, from.y + dir.y, from.z + dir.z);
+    this.scene.add(mesh);
+    this.playerArrows.push({
+      pos: from.clone(),
+      vel: dir.clone().multiplyScalar(22),
+      mesh,
+      life: 3,
+      mobs,
     });
   }
 
@@ -321,6 +338,34 @@ export class DropManager {
         this.explode(bomb.pos.clone());
         this.scene.remove(bomb.mesh);
         this.bombs = this.bombs.filter((b) => b !== bomb);
+      }
+    }
+
+    for (const arrow of [...this.playerArrows]) {
+      arrow.life -= dt;
+      arrow.vel.y -= 8 * dt;
+      arrow.pos.addScaledVector(arrow.vel, dt);
+      arrow.mesh.position.copy(arrow.pos);
+      const bx = Math.floor(arrow.pos.x);
+      const by = Math.floor(arrow.pos.y);
+      const bz = Math.floor(arrow.pos.z);
+      const hitBlock = isSolid(this.world.getBlock(bx, by, bz));
+      if (arrow.life <= 0 || hitBlock || arrow.pos.y < 0) {
+        this.scene.remove(arrow.mesh);
+        this.playerArrows = this.playerArrows.filter((a) => a !== arrow);
+        continue;
+      }
+      if (arrow.mobs) {
+        for (const mob of arrow.mobs.mobs) {
+          const dx = Math.abs(arrow.pos.x - mob.pos.x);
+          const dz = Math.abs(arrow.pos.z - mob.pos.z);
+          if (dx < 0.5 && dz < 0.5 && arrow.pos.y > mob.pos.y && arrow.pos.y < mob.pos.y + mob.def.h) {
+            arrow.mobs.damageMob(mob, 8, arrow.pos.clone());
+            this.scene.remove(arrow.mesh);
+            this.playerArrows = this.playerArrows.filter((a) => a !== arrow);
+            break;
+          }
+        }
       }
     }
   }
