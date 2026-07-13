@@ -18,6 +18,7 @@ import { Chat } from './ui/chat.js';
 import { TouchControls } from './ui/touch.js';
 import { SettingsMenu } from './ui/settingsMenu.js';
 import { Settings } from './game/settings.js';
+import { SaveManager, rleEncode, rleDecode } from './game/save.js';
 import { MobManager } from './entities/mobs.js';
 import { GAMEMODE } from './game/gamemode.js';
 import { runCommand } from './game/commands.js';
@@ -49,7 +50,26 @@ const waterMat = new THREE.MeshLambertMaterial({
 const settings = new Settings();
 const terrain = new Terrain(20260703);
 const world = new World(scene, terrain, solidMat, waterMat);
+
+// Restore the saved world before any chunk loads: edited chunks dropped
+// into world.saved are picked up by loadChunk exactly like chunks that
+// were unloaded mid-session.
+const save = new SaveManager();
+const savedGame = save.load();
+if (savedGame?.chunks) {
+  for (const [k, rle] of Object.entries(savedGame.chunks)) {
+    world.saved.set(k, rleDecode(rle));
+  }
+}
+
 const player = new Player(world.findSpawn());
+if (savedGame?.player) {
+  const p = savedGame.player;
+  player.pos.set(p.pos[0], p.pos[1], p.pos[2]);
+  if (p.spawn) player.spawnPoint.set(p.spawn[0], p.spawn[1], p.spawn[2]);
+  if (typeof p.health === 'number') player.health = p.health;
+  if (typeof p.hunger === 'number') player.hunger = p.hunger;
+}
 const sky = new Sky(scene);
 const inventory = new Inventory();
 const hud = new HUD(atlas.canvas, itemIcons, inventory);
@@ -205,6 +225,10 @@ chat.onSubmit = (msg) => {
     inventory,
     hud,
     settings,
+    resetWorld: () => {
+      save.clear();
+      location.reload();
+    },
   });
   chat.logMessage(result);
 };
@@ -243,6 +267,53 @@ hud.onStart(() => {
   else input.requestLock();
 });
 hud.onInventoryToggle = (open) => setPaused(open);
+
+// Apply the rest of the saved game now that HUD/inventory/sky exist.
+if (savedGame) {
+  if (savedGame.mode === GAMEMODE.CREATIVE) setGamemode(GAMEMODE.CREATIVE);
+  else if (savedGame.inventory?.slots) {
+    savedGame.inventory.slots.forEach((s, i) => {
+      if (s && i < inventory.slots.length) inventory.slots[i] = { id: s.id, count: s.count };
+    });
+  }
+  if (Number.isInteger(savedGame.inventory?.selected)) {
+    inventory.selected = Math.max(0, Math.min(8, savedGame.inventory.selected));
+  }
+  if (typeof savedGame.time === 'number') sky.time = savedGame.time;
+  if (savedGame.look) {
+    input.yaw = savedGame.look[0];
+    input.pitch = savedGame.look[1];
+  }
+  hud.refresh();
+  hud.refreshSelectedName();
+}
+
+save.start(() => {
+  const chunks = {};
+  for (const [k, data] of world.saved) chunks[k] = rleEncode(data);
+  for (const [k, chunk] of world.chunks) {
+    if (chunk.edited) chunks[k] = rleEncode(chunk.data);
+  }
+  return {
+    chunks,
+    player: {
+      pos: [player.pos.x, player.pos.y, player.pos.z],
+      spawn: [player.spawnPoint.x, player.spawnPoint.y, player.spawnPoint.z],
+      health: player.health,
+      hunger: player.hunger,
+    },
+    mode: gameMode,
+    inventory: {
+      selected: inventory.selected,
+      // Creative slots are infinite and refilled by setGamemode on load.
+      slots: isCreative()
+        ? null
+        : inventory.slots.map((s) => (s && !s.infinite ? { id: s.id, count: s.count } : null)),
+    },
+    time: sky.time,
+    look: [input.yaw, input.pitch],
+  };
+});
 
 world.update(player.pos, 30);
 
@@ -347,4 +418,4 @@ window.addEventListener('resize', () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-window.game = { world, player, input, hud, inventory, mobs, camera, terrain, sky, chat, drops, breaker, touch, settings, settingsMenu, setGamemode };
+window.game = { world, player, input, hud, inventory, mobs, camera, terrain, sky, chat, drops, breaker, touch, settings, settingsMenu, save, setGamemode };
