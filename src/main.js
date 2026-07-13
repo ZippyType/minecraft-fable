@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { inject } from '@vercel/analytics';
 import './style.css';
 import { createAtlas } from './render/atlas.js';
 import { Sky } from './render/sky.js';
@@ -22,6 +23,8 @@ import { SaveManager, rleEncode, rleDecode } from './game/save.js';
 import { MobManager } from './entities/mobs.js';
 import { GAMEMODE } from './game/gamemode.js';
 import { runCommand } from './game/commands.js';
+
+inject();
 
 const renderer = new THREE.WebGLRenderer({ antialias: false });
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -320,6 +323,7 @@ world.update(player.pos, 30);
 const clock = new THREE.Clock();
 let fps = 0, fpsFrames = 0, fpsTime = 0, debugTime = 0;
 let attackCd = 0;
+let touchBreakCd = 0;
 
 function frame() {
   requestAnimationFrame(frame);
@@ -329,6 +333,7 @@ function frame() {
   if (playing) {
     player.update(dt, input, world);
     if (attackCd > 0) attackCd -= dt;
+    if (touchBreakCd > 0) touchBreakCd -= dt;
 
     if (input.touchAttack) {
       // Touch attack button: attacks mobs only, no block breaking
@@ -353,8 +358,16 @@ function frame() {
           attackCd = isCreative() ? 0.15 : 0.45;
         }
       } else if (isCreative()) {
-        const t = currentTarget();
-        if (t) world.setBlock(t.x, t.y, t.z, BLOCK.AIR);
+        if (input.touchBreak) {
+          if (touchBreakCd <= 0) {
+            const t = currentTarget();
+            if (t) world.setBlock(t.x, t.y, t.z, BLOCK.AIR);
+            touchBreakCd = 0.1;
+          }
+        } else {
+          const t = currentTarget();
+          if (t) world.setBlock(t.x, t.y, t.z, BLOCK.AIR);
+        }
         hud.setBreakProgress(0);
       } else {
         const t = currentTarget();
@@ -365,6 +378,7 @@ function frame() {
       }
     } else {
       hud.setBreakProgress(0);
+      touchBreakCd = 0;
     }
     mobs.update(dt, player, sky, camera.position, lookDir, false, isCreative());
   } else if (!uiBlocking()) {

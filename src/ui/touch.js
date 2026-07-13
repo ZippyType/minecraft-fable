@@ -8,6 +8,7 @@
 // the first real touch anywhere (hybrid laptops).
 
 const TAP_SLOP_PX = 12;
+const BUTTON_COOLDOWN_MS = 100;
 // Base radians-per-pixel for touch look; scaled by settings.sensitivity.
 const LOOK_SENSITIVITY = 0.007;
 const STICK_DEADZONE = 0.18;
@@ -52,6 +53,8 @@ export class TouchControls {
     this.lookId = null;
     this.lookLast = { x: 0, y: 0 };
     this.tapMoved = 0;
+    this.lastAttackTime = 0;
+    this.lastPlaceTime = 0;
 
     this.bind();
     this.setMode(settings.touchMode);
@@ -184,17 +187,29 @@ export class TouchControls {
 
     // Attack button (sword): attacks mobs only while held
     this.pressButton('.attack',
-      () => { this.input.touchAttack = true; },
+      () => {
+        const now = performance.now();
+        if (now - this.lastAttackTime < BUTTON_COOLDOWN_MS) return;
+        this.lastAttackTime = now;
+        this.input.touchAttack = true;
+      },
       () => { this.input.touchAttack = false; });
 
     // Break button (pickaxe): breaks blocks only while held
     this.pressButton('.break-btn',
-      () => { this.input.breaking = true; this.input.touchBreak = true; },
+      () => {
+        this.input.breaking = true; this.input.touchBreak = true;
+      },
       () => { this.input.breaking = false; this.input.touchBreak = false; this.handlers.stopBreak?.(); });
 
     // Place button (block): single tap places one block or uses item
     this.pressButton('.place-btn',
-      () => { this.handlers.useItem?.(); },
+      () => {
+        const now = performance.now();
+        if (now - this.lastPlaceTime < BUTTON_COOLDOWN_MS) return;
+        this.lastPlaceTime = now;
+        this.handlers.useItem?.();
+      },
       null);
   }
 
