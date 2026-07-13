@@ -18,6 +18,8 @@ export class Input {
     this.touchF = 0;
     this.touchS = 0;
     this.touchSprint = false;
+    this.touchAttack = false;
+    this.touchBreak = false;
 
     document.addEventListener('keydown', (e) => {
       const binds = this.settings.bindings;
@@ -84,8 +86,10 @@ export class Input {
   }
 
   stopBreak() {
-    if (!this.breaking) return;
+    if (!this.breaking && !this.touchAttack) return;
     this.breaking = false;
+    this.touchAttack = false;
+    this.touchBreak = false;
     this.handlers.stopBreak?.();
   }
 

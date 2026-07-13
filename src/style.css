@@ -684,17 +684,59 @@ canvas {
 
 .tbtn.jump {
   right: 26px;
-  bottom: 118px;
+  bottom: 140px;
   width: 84px;
   height: 84px;
 }
 
 .tbtn.sneak {
+  right: 26px;
+  bottom: 76px;
+  width: 52px;
+  height: 52px;
+  font-size: 18px;
+}
+
+.tbtn.attack {
   right: 126px;
-  bottom: 92px;
+  bottom: 208px;
   width: 56px;
   height: 56px;
-  font-size: 18px;
+  font-size: 22px;
+  color: #ff6666;
+  border-color: rgba(255, 100, 100, 0.45);
+}
+
+.tbtn.attack.pressed {
+  background: rgba(255, 80, 80, 0.35);
+}
+
+.tbtn.break-btn {
+  right: 126px;
+  bottom: 146px;
+  width: 56px;
+  height: 56px;
+  font-size: 22px;
+  color: #88ccff;
+  border-color: rgba(100, 180, 255, 0.45);
+}
+
+.tbtn.break-btn.pressed {
+  background: rgba(80, 160, 255, 0.35);
+}
+
+.tbtn.place-btn {
+  right: 126px;
+  bottom: 84px;
+  width: 56px;
+  height: 56px;
+  font-size: 22px;
+  color: #88ee88;
+  border-color: rgba(100, 220, 100, 0.45);
+}
+
+.tbtn.place-btn.pressed {
+  background: rgba(80, 200, 80, 0.35);
 }
 
 .tbtn-col {

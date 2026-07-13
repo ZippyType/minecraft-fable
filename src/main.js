@@ -330,10 +330,21 @@ function frame() {
     player.update(dt, input, world);
     if (attackCd > 0) attackCd -= dt;
 
-    if (input.breaking) {
+    if (input.touchAttack) {
+      // Touch attack button: attacks mobs only, no block breaking
       camera.getWorldDirection(lookDir);
       const mob = mobs.raycastMob(camera.position, lookDir, 4.5);
-      if (mob) {
+      if (mob && attackCd <= 0) {
+        const killed = mobs.damageMob(mob, meleeDamage(), player.pos);
+        if (killed) hud.refresh();
+        attackCd = isCreative() ? 0.15 : 0.45;
+      }
+      hud.setBreakProgress(0);
+    } else if (input.breaking) {
+      camera.getWorldDirection(lookDir);
+      const mob = mobs.raycastMob(camera.position, lookDir, 4.5);
+      if (mob && !input.touchBreak) {
+        // Keyboard breaking: attack mobs first, then blocks
         breaker.stop();
         hud.setBreakProgress(0);
         if (attackCd <= 0) {

@@ -1,13 +1,12 @@
 // Minecraft PE-style touch controls:
 //   - virtual joystick (bottom-left) moves the player, analog speed
-//   - dragging anywhere else looks around
-//   - quick tap = use item / place block, press-and-hold = break block
-//   - jump + sneak/descend buttons (bottom-right)
+//   - dragging the look layer looks around (no actions on the look layer)
+//   - dedicated action buttons: Attack (sword), Break (pickaxe), Place (block)
+//   - jump + sneak buttons (bottom-right)
 //   - small buttons for inventory, chat, and pause (top-right)
 // Enabled automatically on coarse-pointer devices (phones/tablets), or on
 // the first real touch anywhere (hybrid laptops).
 
-const HOLD_TO_BREAK_MS = 350;
 const TAP_SLOP_PX = 12;
 // Base radians-per-pixel for touch look; scaled by settings.sensitivity.
 const LOOK_SENSITIVITY = 0.007;
@@ -23,7 +22,7 @@ export class TouchControls {
     this.userDisabled = false;
     this.firstTouchArmed = false;
 
-    // Full-screen look/act layer, painted (and hit-tested) below every other
+    // Full-screen look layer, painted (and hit-tested) below every other
     // HUD element so panels and buttons take priority.
     this.look = document.createElement('div');
     this.look.className = 'touch-look';
@@ -33,6 +32,9 @@ export class TouchControls {
     this.ui.className = 'touch-ui';
     this.ui.innerHTML = `
       <div class="joystick"><div class="knob"></div></div>
+      <div class="tbtn attack">&#9876;</div>
+      <div class="tbtn break-btn">&#9935;</div>
+      <div class="tbtn place-btn">&#9632;</div>
       <div class="tbtn jump">&#9650;</div>
       <div class="tbtn sneak">&#9660;</div>
       <div class="tbtn-col">
@@ -48,10 +50,8 @@ export class TouchControls {
 
     this.stickId = null;
     this.lookId = null;
-    this.lookState = null; // 'pending' | 'look' | 'break'
     this.lookLast = { x: 0, y: 0 };
     this.tapMoved = 0;
-    this.breakTimer = 0;
 
     this.bind();
     this.setMode(settings.touchMode);
@@ -69,14 +69,14 @@ export class TouchControls {
     this.enabled = false;
     this.input.touchMode = false;
     this.root.classList.remove('touch-on');
-    clearTimeout(this.breakTimer);
     this.stickId = null;
     this.lookId = null;
-    this.lookState = null;
     this.knob.style.transform = '';
     this.input.touchF = 0;
     this.input.touchS = 0;
     this.input.touchSprint = false;
+    this.input.touchAttack = false;
+    this.input.touchBreak = false;
     if (this.input.breaking) {
       this.input.breaking = false;
       this.handlers.stopBreak?.();
@@ -116,6 +116,7 @@ export class TouchControls {
   }
 
   bind() {
+    // Joystick: bottom-left analog movement
     this.base.addEventListener('touchstart', (e) => {
       e.preventDefault();
       if (this.stickId !== null) return;
@@ -124,21 +125,14 @@ export class TouchControls {
       this.moveStick(t);
     }, { passive: false });
 
+    // Look layer: ONLY handles camera look — no tap/hold actions.
     this.look.addEventListener('touchstart', (e) => {
       e.preventDefault();
       if (!this.input.locked || this.input.paused || this.lookId !== null) return;
       const t = e.changedTouches[0];
       this.lookId = t.identifier;
-      this.lookState = 'pending';
       this.tapMoved = 0;
       this.lookLast = { x: t.clientX, y: t.clientY };
-      clearTimeout(this.breakTimer);
-      this.breakTimer = setTimeout(() => {
-        if (this.lookState === 'pending') {
-          this.lookState = 'break';
-          this.input.breaking = true;
-        }
-      }, HOLD_TO_BREAK_MS);
     }, { passive: false });
 
     document.addEventListener('touchmove', (e) => {
@@ -152,15 +146,9 @@ export class TouchControls {
           const dy = t.clientY - this.lookLast.y;
           this.lookLast = { x: t.clientX, y: t.clientY };
           this.tapMoved += Math.abs(dx) + Math.abs(dy);
-          if (this.lookState === 'pending' && this.tapMoved > TAP_SLOP_PX) {
-            this.lookState = 'look';
-            clearTimeout(this.breakTimer);
-          }
-          if (this.lookState === 'look' || this.lookState === 'break') {
-            const sens = LOOK_SENSITIVITY * this.settings.sensitivity;
-            this.input.yaw -= dx * sens;
-            this.input.pitch = Math.max(-1.55, Math.min(1.55, this.input.pitch - dy * sens));
-          }
+          const sens = LOOK_SENSITIVITY * this.settings.sensitivity;
+          this.input.yaw -= dx * sens;
+          this.input.pitch = Math.max(-1.55, Math.min(1.55, this.input.pitch - dy * sens));
           handled = true;
         }
       }
@@ -176,22 +164,14 @@ export class TouchControls {
           this.input.touchS = 0;
           this.input.touchSprint = false;
         } else if (t.identifier === this.lookId) {
-          clearTimeout(this.breakTimer);
-          if (this.lookState === 'pending' && this.input.locked && !this.input.paused) {
-            this.handlers.useItem?.();
-          }
-          if (this.lookState === 'break') {
-            this.input.breaking = false;
-            this.handlers.stopBreak?.();
-          }
           this.lookId = null;
-          this.lookState = null;
         }
       }
     };
     document.addEventListener('touchend', endTouch);
     document.addEventListener('touchcancel', endTouch);
 
+    // Action buttons
     this.pressButton('.jump',
       () => this.input.pressAction('jump'),
       () => this.input.releaseAction('jump'));
@@ -201,6 +181,21 @@ export class TouchControls {
     this.pressButton('.inv-btn', () => this.handlers.toggleInventory?.());
     this.pressButton('.chat-btn', () => this.handlers.toggleChat?.());
     this.pressButton('.pause-btn', () => this.handlers.pause?.());
+
+    // Attack button (sword): attacks mobs only while held
+    this.pressButton('.attack',
+      () => { this.input.touchAttack = true; },
+      () => { this.input.touchAttack = false; });
+
+    // Break button (pickaxe): breaks blocks only while held
+    this.pressButton('.break-btn',
+      () => { this.input.breaking = true; this.input.touchBreak = true; },
+      () => { this.input.breaking = false; this.input.touchBreak = false; this.handlers.stopBreak?.(); });
+
+    // Place button (block): single tap places one block or uses item
+    this.pressButton('.place-btn',
+      () => { this.handlers.useItem?.(); },
+      null);
   }
 
   pressButton(selector, down, up) {
