@@ -22,6 +22,8 @@ export class Player {
     this.hunger = 20;
     this.hungerTimer = 0;
     this.starveTimer = 0;
+    this.regenTimer = 0;
+    this.swimTimer = 0;
     this.airborneY = null;
     this.invuln = 0;
     this.hurtFlash = 0;
@@ -69,6 +71,8 @@ export class Player {
     this.airborneY = null;
     this.hungerTimer = 0;
     this.starveTimer = 0;
+    this.regenTimer = 0;
+    this.swimTimer = 0;
   }
 
   update(dt, input, world) {
@@ -109,12 +113,22 @@ export class Player {
       this.vel.y -= 14 * dt;
       if (space) this.vel.y += 42 * dt;
       this.vel.y = Math.max(-4.5, Math.min(4.5, this.vel.y));
+      if (!this.creative && moving) {
+        this.swimTimer += dt;
+        if (this.swimTimer >= 3) {
+          this.swimTimer = 0;
+          this.hunger = Math.max(0, this.hunger - 1);
+        }
+      }
     } else {
       this.vel.y -= GRAVITY * dt;
       this.vel.y = Math.max(this.vel.y, -55);
       if (space && this.onGround) {
         this.vel.y = JUMP_SPEED;
         this.onGround = false;
+        if (!this.creative && shift) {
+          this.hunger = Math.max(0, this.hunger - 2);
+        }
       }
     }
 
@@ -161,6 +175,16 @@ export class Player {
         }
       } else {
         this.starveTimer = 0;
+      }
+      if (this.health < this.maxHealth && this.hunger > 6) {
+        const regenInterval = this.hunger >= 18 ? 4 : 8;
+        this.regenTimer += dt;
+        if (this.regenTimer >= regenInterval) {
+          this.regenTimer = 0;
+          this.heal(1);
+        }
+      } else {
+        this.regenTimer = 0;
       }
     }
 

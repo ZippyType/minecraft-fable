@@ -21,6 +21,7 @@ export const BLOCK = {
   BRICK: 20,
   CRAFTING_TABLE: 21,
   FURNACE: 22,
+  END_PORTAL: 23,
 };
 
 // tiles: atlas tile index per face group [top, bottom, side]
@@ -47,6 +48,7 @@ export const BLOCKS = {
   [BLOCK.BRICK]: { name: 'Brick', tiles: [22, 22, 22], icon: 22 },
   [BLOCK.CRAFTING_TABLE]: { name: 'Crafting Table', tiles: [23, 23, 24], icon: 23 },
   [BLOCK.FURNACE]: { name: 'Furnace', tiles: [25, 25, 26], icon: 26 },
+  [BLOCK.END_PORTAL]: { name: 'End Portal', tiles: [27, 27, 27], icon: 27 },
 };
 
 // Seconds to break by hand (survival).
@@ -71,6 +73,7 @@ export const BLOCK_HARDNESS = {
   [BLOCK.BRICK]: 2.0,
   [BLOCK.CRAFTING_TABLE]: 2.0,
   [BLOCK.FURNACE]: 3.5,
+  [BLOCK.END_PORTAL]: 999,
 };
 
 // Which tool class (see world/items.js) mines each block faster.
@@ -100,7 +103,7 @@ export function isSolid(id) {
 }
 
 export function isBreakable(id) {
-  return id !== BLOCK.AIR && id !== BLOCK.WATER && id !== BLOCK.BEDROCK;
+  return id !== BLOCK.AIR && id !== BLOCK.WATER && id !== BLOCK.BEDROCK && id !== BLOCK.END_PORTAL;
 }
 
 export function isTransparent(id) {

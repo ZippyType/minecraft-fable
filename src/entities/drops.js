@@ -86,6 +86,47 @@ export class DropManager {
     return geo;
   }
 
+  spawnBlockParticles(x, y, z, blockId) {
+    const colors = {
+      1: [0x5a9a3a, 0x8b6914],
+      2: [0x8b6914],
+      3: [0x808080],
+      4: [0xd4c89a],
+      5: [0x3a6ab0],
+      6: [0x6b4226],
+      7: [0x3a7a2a],
+      8: [0x505050, 0x888888],
+      9: [0xc8a070, 0x808080],
+      11: [0xe8c840, 0x808080],
+      12: [0x40d8e8, 0x808080],
+      13: [0x404040],
+      14: [0x8a8070],
+      15: [0xf0f0ff],
+      16: [0x30a030],
+      17: [0xcc3030, 0xf0e040],
+      18: [0xb8944a],
+      19: [0xc8e0f0],
+      20: [0xb04030],
+      21: [0x8a6220, 0xb09060],
+      22: [0x707070],
+    };
+    const cols = colors[blockId] ?? [0x808080];
+    const center = new THREE.Vector3(x, y, z);
+    for (let i = 0; i < 10; i++) {
+      const color = cols[Math.floor(Math.random() * cols.length)];
+      const mat = new THREE.MeshBasicMaterial({ color });
+      const mesh = new THREE.Mesh(this.particleGeo, mat);
+      mesh.position.copy(center);
+      const vel = new THREE.Vector3(
+        (Math.random() - 0.5) * 4,
+        Math.random() * 4 + 1,
+        (Math.random() - 0.5) * 4
+      );
+      this.scene.add(mesh);
+      this.particles.push({ mesh, vel, life: 0.3 + Math.random() * 0.3 });
+    }
+  }
+
   mobDeath(type, pos) {
     const color = BURST_COLORS[type] ?? 0xffffff;
     const center = pos.clone().add(new THREE.Vector3(0, 0.8, 0));

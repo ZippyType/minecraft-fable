@@ -87,6 +87,13 @@ const RECIPES = [
     ],
     out: { id: ITEM.DIAMOND_CHEST, count: 1 },
   },
+  {
+    grid: [
+      [ITEM.ENDER_PEARL, BLOCK.DIAMOND_ORE],
+      [BLOCK.COAL_ORE, ITEM.ENDER_PEARL],
+    ],
+    out: { id: BLOCK.END_PORTAL, count: 1 },
+  },
 ];
 
 const TOOL_TIERS = [

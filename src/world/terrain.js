@@ -31,6 +31,11 @@ export class Terrain {
     return (h >>> 0) / 4294967296;
   }
 
+  riverAt(x, z) {
+    const n = this.noise.noise2(x * 0.002, z * 0.002);
+    return Math.abs(n) < 0.02;
+  }
+
   biomeAt(x, z) {
     const n = this.noise.noise2(x * 0.003, z * 0.003);
     if (n > 0.35) return 'desert';
@@ -49,11 +54,17 @@ export class Terrain {
     else if (biome === 'snow') hillAmp = 8;
     else if (biome === 'forest') hillAmp = 9;
     const y = 31 + continents * 20 + hills * hillAmp;
-    return Math.max(2, Math.min(CHUNK_HEIGHT - 6, Math.round(y)));
+    const adjusted = this.riverAt(x, z) ? Math.min(y, SEA_LEVEL - 1) : y;
+    return Math.max(2, Math.min(CHUNK_HEIGHT - 6, Math.round(adjusted)));
   }
 
   // Terrain without trees (trees are overlaid per-chunk in genChunkData).
   baseBlockAt(x, y, z, h = this.heightAt(x, z)) {
+    if (this.riverAt(x, z)) {
+      if (y > h && y <= SEA_LEVEL) return BLOCK.WATER;
+      if (y === h) return BLOCK.GRAVEL;
+      if (y > h - 3) return this.hash2(x, z) < 0.5 ? BLOCK.GRAVEL : BLOCK.SAND;
+    }
     if (y > h) return y <= SEA_LEVEL ? BLOCK.WATER : BLOCK.AIR;
     if (y === 0) return BLOCK.BEDROCK;
     if (y === 1) return this.hash2(x, z) < 0.5 ? BLOCK.BEDROCK : BLOCK.STONE;
@@ -89,6 +100,29 @@ export class Terrain {
     const gn = this.noiseOre.noise3(x * 0.1 + 500, y * 0.1 + 500, z * 0.1 + 500);
     if (y <= SEA_LEVEL + 2 && Math.abs(y - SEA_LEVEL) <= 2 && gn > 0.45) return BLOCK.GRAVEL;
     return BLOCK.STONE;
+  }
+
+  dungeonAt(x, z) {
+    const dx = Math.floor(x / 16);
+    const dz = Math.floor(z / 16);
+    const h = this.hash2(dx * 7 + 1234, dz * 13 + 5678);
+    if (h > 0.03) return null;
+
+    const lx = x - dx * 16;
+    const lz = z - dz * 16;
+
+    const cx = 8, cz = 8;
+    const dist = Math.max(Math.abs(lx - cx), Math.abs(lz - cz));
+
+    if (dist <= 3) return 'room';
+    if (dist === 4) return 'wall';
+    return null;
+  }
+
+  getDungeonSpawner(cx, cz) {
+    const h = this.hash2(cx * 7 + 1234, cz * 13 + 5678);
+    if (h > 0.03) return null;
+    return { x: cx * 16 + 8, y: 11, z: cz * 16 + 8 };
   }
 
   treeAt(x, z) {
@@ -148,6 +182,32 @@ export class Terrain {
           const i = blockIndex(lx, by, lz);
           if (id === BLOCK.WOOD || data[i] === BLOCK.AIR) data[i] = id;
         });
+      }
+    }
+
+    const dcx = Math.floor(x0 / 16);
+    const dcz = Math.floor(z0 / 16);
+    const dh = this.hash2(dcx * 7 + 1234, dcz * 13 + 5678);
+    if (dh <= 0.03) {
+      const centerH = this.heightAt(x0 + 8, z0 + 8);
+      if (centerH >= 16) {
+        for (let x = 0; x < CHUNK_SIZE; x++) {
+          for (let z = 0; z < CHUNK_SIZE; z++) {
+            const lx = x - 8;
+            const lz = z - 8;
+            const dist = Math.max(Math.abs(lx), Math.abs(lz));
+            if (dist <= 3) {
+              for (let y = 10; y <= 13; y++) data[blockIndex(x, y, z)] = BLOCK.AIR;
+              data[blockIndex(x, 9, z)] = BLOCK.STONE;
+              data[blockIndex(x, 14, z)] = BLOCK.STONE;
+            } else if (dist === 4) {
+              for (let y = 10; y <= 13; y++) data[blockIndex(x, y, z)] = BLOCK.STONE;
+              data[blockIndex(x, 9, z)] = BLOCK.STONE;
+              data[blockIndex(x, 14, z)] = BLOCK.STONE;
+            }
+          }
+        }
+        data[blockIndex(8, 11, 8)] = BLOCK.FURNACE;
       }
     }
 

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { BLOCK, isSolid } from '../world/blocks.js';
+import { ITEMS } from '../world/items.js';
 import { buildMobMesh } from '../render/mobMeshes.js';
 
 import { MOB } from './mobTypes.js';
@@ -34,6 +35,7 @@ export class MobManager {
     this.onExplode = null;
     this.arrowGeo = new THREE.BoxGeometry(0.15, 0.15, 0.5);
     this.arrowMat = new THREE.MeshLambertMaterial({ color: 0x8b6914 });
+    this.spawnerTimers = new Map();
   }
 
   spawn(type, x, y, z) {
@@ -55,6 +57,9 @@ export class MobManager {
       fuse: 0,
       flash: false,
       onGround: false,
+      baby: false,
+      age: 0,
+      breedTimer: 0,
     });
   }
 
@@ -165,6 +170,44 @@ export class MobManager {
     }
   }
 
+  updateSpawners(dt, playerPos) {
+    const pcx = Math.floor(playerPos.x / 16);
+    const pcz = Math.floor(playerPos.z / 16);
+
+    for (let dx = -2; dx <= 2; dx++) {
+      for (let dz = -2; dz <= 2; dz++) {
+        const cx = pcx + dx;
+        const cz = pcz + dz;
+        const spawner = this.world.terrain.getDungeonSpawner(cx, cz);
+        if (!spawner) continue;
+
+        const key = `${cx},${cz}`;
+        let entry = this.spawnerTimers.get(key);
+        if (!entry) {
+          entry = { timer: 10 + Math.random() * 10, pos: spawner };
+          this.spawnerTimers.set(key, entry);
+        }
+
+        entry.timer -= dt;
+        if (entry.timer <= 0) {
+          entry.timer = 10 + Math.random() * 10;
+          const sp = entry.pos;
+          const nearby = this.mobs.filter(m => {
+            if (m.def.passive) return false;
+            const ddx = m.pos.x - sp.x;
+            const ddy = m.pos.y - sp.y;
+            const ddz = m.pos.z - sp.z;
+            return ddx * ddx + ddy * ddy + ddz * ddz < 64;
+          });
+          if (nearby.length < 2) {
+            const type = HOSTILE[Math.floor(Math.random() * HOSTILE.length)];
+            this.spawn(type, sp.x + 0.5, sp.y + 1, sp.z + 0.5);
+          }
+        }
+      }
+    }
+  }
+
   shootArrow(from, dir) {
     const mesh = new THREE.Mesh(this.arrowGeo, this.arrowMat);
     mesh.position.copy(from);
@@ -220,6 +263,42 @@ export class MobManager {
     this.onMobDeath?.(type, pos);
   }
 
+  breedAnimals(player, inventory) {
+    const id = inventory.selectedId();
+    if (!id) return false;
+    const itemDef = ITEMS[id];
+    if (!itemDef || itemDef.purpose !== 'food') return false;
+
+    const candidates = this.mobs.filter(
+      (m) => m.def.passive && !m.baby && m.breedTimer <= 0
+    );
+
+    for (let i = 0; i < candidates.length; i++) {
+      for (let j = i + 1; j < candidates.length; j++) {
+        const a = candidates[i];
+        const b = candidates[j];
+        if (a.type !== b.type) continue;
+        const dist = a.pos.distanceTo(b.pos);
+        if (dist > 4) continue;
+        const playerDist = player.pos.distanceTo(a.pos.clone().add(b.pos).multiplyScalar(0.5));
+        if (playerDist > 4) continue;
+
+        const mid = a.pos.clone().add(b.pos).multiplyScalar(0.5);
+        this.spawn(a.type, mid.x, mid.y, mid.z);
+        const baby = this.mobs[this.mobs.length - 1];
+        baby.baby = true;
+        baby.age = 0;
+        baby.mesh.scale.set(0.6, 0.6, 0.6);
+
+        a.breedTimer = 60;
+        b.breedTimer = 60;
+        inventory.removeFromSelected(1);
+        return true;
+      }
+    }
+    return false;
+  }
+
   damageMob(mob, amount, fromPos) {
     mob.hp -= amount;
     mob.hurtTime = 0.2;
@@ -240,9 +319,17 @@ export class MobManager {
     if (paused) return;
 
     this.trySpawn(dt, player.pos, sky);
+    this.updateSpawners(dt, player.pos);
 
     for (const mob of [...this.mobs]) {
       if (mob.hurtTime > 0) mob.hurtTime -= dt;
+      if (mob.breedTimer > 0) mob.breedTimer -= dt;
+      if (mob.baby) {
+        mob.age += dt;
+        const scale = 0.6 + 0.4 * (mob.age / 20);
+        mob.mesh.scale.set(scale, scale, scale);
+        if (mob.age >= 20) mob.baby = false;
+      }
       const tint = mob.hurtTime > 0 ? 0x552222 : mob.flash ? 0x999999 : 0x000000;
       mob.mesh.traverse((child) => {
         if (child.isMesh && child.material?.emissive) {

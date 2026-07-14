@@ -23,6 +23,7 @@ import { SaveManager, rleEncode, rleDecode } from './game/save.js';
 import { MobManager } from './entities/mobs.js';
 import { GAMEMODE } from './game/gamemode.js';
 import { runCommand } from './game/commands.js';
+import * as sounds from './audio/sounds.js';
 
 inject();
 
@@ -84,6 +85,7 @@ const breaker = new BlockBreaker(world, inventory, drops);
 mobs.onMobDeath = (type, pos) => drops.mobDeath(type, pos);
 mobs.onExplode = (pos) => {
   drops.explode(pos);
+  sounds.playExplode();
   const dist = pos.distanceTo(camera.position);
   if (dist < 6 && !isCreative()) player.damage(Math.max(2, Math.round(12 * (1 - dist / 6))));
 };
@@ -140,6 +142,7 @@ function placeBlock() {
   if (id !== BLOCK.WATER && player.intersectsBlock(x, y, z)) return;
   if (world.setBlock(x, y, z, id)) {
     inventory.removeFromSelected(1);
+    sounds.playPlace();
     hud.refresh();
     hud.refreshSelectedName();
   }
@@ -162,6 +165,7 @@ function useItem() {
   if (purpose === 'food' && !isCreative()) {
     player.eat(foodValue(id));
     inventory.removeFromSelected(1);
+    sounds.playEat();
     hud.refresh();
     hud.refreshSelectedName();
     return;
@@ -177,6 +181,7 @@ function useItem() {
       inventory.removeFromSelected(1);
     } else if (id === ITEM.BOW) {
       drops.shootPlayerArrow(from, lookDir, mobs);
+      sounds.playArrow();
     }
     hud.refresh();
     hud.refreshSelectedName();
@@ -349,8 +354,13 @@ function frame() {
       camera.getWorldDirection(lookDir);
       const mob = mobs.raycastMob(camera.position, lookDir, 4.5);
       if (mob && attackCd <= 0) {
-        const killed = mobs.damageMob(mob, meleeDamage(), player.pos);
-        if (killed) hud.refresh();
+        if (mob.def.passive && isFood(inventory.selectedId())) {
+          if (mobs.breedAnimals(player, inventory)) hud.refresh();
+        } else {
+          const killed = mobs.damageMob(mob, meleeDamage(), player.pos);
+          sounds.playHit();
+          if (killed) hud.refresh();
+        }
         attackCd = isCreative() ? 0.15 : 0.45;
       }
       hud.setBreakProgress(0);
@@ -362,20 +372,33 @@ function frame() {
         breaker.stop();
         hud.setBreakProgress(0);
         if (attackCd <= 0) {
-          const killed = mobs.damageMob(mob, meleeDamage(), player.pos);
-          if (killed) hud.refresh();
+          if (mob.def.passive && isFood(inventory.selectedId())) {
+            if (mobs.breedAnimals(player, inventory)) hud.refresh();
+          } else {
+            const killed = mobs.damageMob(mob, meleeDamage(), player.pos);
+            sounds.playHit();
+            if (killed) hud.refresh();
+          }
           attackCd = isCreative() ? 0.15 : 0.45;
         }
       } else if (isCreative()) {
         if (input.touchBreak) {
           if (touchBreakCd <= 0) {
             const t = currentTarget();
-            if (t) world.setBlock(t.x, t.y, t.z, BLOCK.AIR);
+            if (t) {
+              drops.spawnBlockParticles(t.x + 0.5, t.y + 0.5, t.z + 0.5, t.id);
+              world.setBlock(t.x, t.y, t.z, BLOCK.AIR);
+              sounds.playBreak();
+            }
             touchBreakCd = 0.1;
           }
         } else {
           const t = currentTarget();
-          if (t) world.setBlock(t.x, t.y, t.z, BLOCK.AIR);
+          if (t) {
+            drops.spawnBlockParticles(t.x + 0.5, t.y + 0.5, t.z + 0.5, t.id);
+            world.setBlock(t.x, t.y, t.z, BLOCK.AIR);
+            sounds.playBreak();
+          }
         }
         hud.setBreakProgress(0);
       } else {
@@ -383,7 +406,10 @@ function frame() {
         if (t) breaker.start(t);
         const result = breaker.update(dt, t);
         hud.setBreakProgress(breaker.getProgress());
-        if (result === 'broken') hud.refresh();
+        if (result === 'broken') {
+          sounds.playBreak();
+          hud.refresh();
+        }
       }
     } else {
       hud.setBreakProgress(0);
@@ -408,7 +434,7 @@ function frame() {
   scene._cameraY = camera.position.y;
   scene._cameraZ = camera.position.z;
   sky.update(dt, scene);
-  drops.update(dt, player.pos, () => hud.refresh());
+  drops.update(dt, player.pos, () => { sounds.playPickup(); hud.refresh(); });
 
   const target = playing ? currentTarget() : null;
   highlight.visible = !!target;

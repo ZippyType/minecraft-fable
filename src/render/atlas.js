@@ -189,6 +189,13 @@ export function createAtlas() {
 
   fill(26, stonePx); // furnace side
 
+  fill(27, (x, y) => {
+    const star = Math.random() < 0.06;
+    return star
+      ? [160 + rnd(50), 120 + rnd(50), 200 + rnd(55)]
+      : [12 + rnd(10), 6 + rnd(8), 24 + rnd(14)];
+  }); // end portal
+
   const texture = new THREE.CanvasTexture(canvas);
   texture.magFilter = THREE.NearestFilter;
   texture.minFilter = THREE.NearestFilter;
