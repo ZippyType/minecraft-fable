@@ -9,6 +9,25 @@ const SKINS = [
   { name: 'Herobrine', hair: '#4a2a0a', skin: '#c69c6d', shirt: '#00aadb', pants: '#3b3b98', shoes: '#3b3b98' },
 ];
 
+const SPLASHES = [
+  'Also try Terraria!',
+  '100% pure JavaScript!',
+  'Now with more blocks!',
+  'Woo, voxel!',
+  'Minecraft-ish!',
+  'Pixelated!',
+  'Breaking blocks since 2024!',
+  'As seen on GitHub!',
+  'Made with Three.js!',
+  'Contains no cows!',
+  'Infinite worlds!',
+  'Procedural!',
+  'Open source!',
+  'Touch-friendly!',
+  'Free to play!',
+  'Not a real Minecraft!',
+];
+
 export { SKINS };
 
 function drawSkinPreview(ctx, skin, size) {
@@ -33,6 +52,28 @@ function drawSkinPreview(ctx, skin, size) {
   ctx.fillRect(size * 0.56, size * 0.11, size * 0.04, size * 0.04);
 }
 
+function createDirtTexture() {
+  const c = document.createElement('canvas');
+  c.width = 16;
+  c.height = 16;
+  const ctx = c.getContext('2d');
+  const imgData = ctx.createImageData(16, 16);
+  const d = imgData.data;
+  const base = [134, 96, 67];
+  for (let y = 0; y < 16; y++) {
+    for (let x = 0; x < 16; x++) {
+      const i = (y * 16 + x) * 4;
+      const v = (Math.random() * 30 - 15) | 0;
+      d[i] = Math.max(0, Math.min(255, base[0] + v + ((y % 4 < 2) ? -5 : 5)));
+      d[i + 1] = Math.max(0, Math.min(255, base[1] + v + ((x % 3 === 0) ? -8 : 0)));
+      d[i + 2] = Math.max(0, Math.min(255, base[2] + v));
+      d[i + 3] = 255;
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+  return c.toDataURL();
+}
+
 export class MainMenu {
   constructor(root, onPlay) {
     this.root = root;
@@ -46,46 +87,81 @@ export class MainMenu {
   }
 
   _build() {
+    const splash = SPLASHES[(Math.random() * SPLASHES.length) | 0];
+    const dirtUrl = createDirtTexture();
+
     this.el = document.createElement('div');
     this.el.className = 'menu';
+    this.el.style.backgroundImage = `url(${dirtUrl})`;
+    this.el.style.backgroundRepeat = 'repeat';
     this.el.innerHTML = `
-      <div class="menu-title">VoxelCraft</div>
-      <div class="menu-subtitle">A Minecraft-like game</div>
+      <div class="menu-bg-overlay"></div>
+      <div class="menu-content">
+        <div class="menu-logo-area">
+          <div class="menu-title">VoxelCraft</div>
+          <div class="menu-splash">${splash}</div>
+        </div>
 
-      <div class="menu-screen menu-title-screen">
-        <button class="menu-btn menu-play">Play</button>
-        <button class="menu-btn menu-skins">Skins</button>
-        <button class="menu-btn menu-settings-btn">Settings</button>
-      </div>
+        <div class="menu-screen menu-title-screen">
+          <button class="menu-btn">Singleplayer</button>
+        </div>
 
-      <div class="menu-screen menu-worlds-screen" style="display:none">
-        <h2>Select World</h2>
-        <div class="menu-world-list"></div>
-        <button class="menu-btn menu-create-world">+ Create New World</button>
-        <button class="menu-btn menu-back-1">Back</button>
-      </div>
-
-      <div class="menu-screen menu-create-screen" style="display:none">
-        <h2>Create New World</h2>
-        <div class="menu-form">
-          <label>World Name</label>
-          <input type="text" class="menu-input menu-world-name" placeholder="My World" maxlength="32">
-          <label>Seed (optional)</label>
-          <input type="text" class="menu-input menu-seed" placeholder="Random">
-          <label>Game Mode</label>
-          <div class="menu-mode-toggle">
-            <button class="menu-mode active" data-mode="survival">Survival</button>
-            <button class="menu-mode" data-mode="creative">Creative</button>
+        <div class="menu-screen menu-worlds-screen" style="display:none">
+          <div class="menu-panel">
+            <div class="menu-panel-title">Select World</div>
+            <div class="menu-world-list"></div>
+          </div>
+          <div class="menu-btn-row">
+            <button class="menu-btn menu-btn-half">Create New World</button>
+            <button class="menu-btn menu-btn-half menu-btn-disabled">Delete</button>
+          </div>
+          <div class="menu-btn-row">
+            <button class="menu-btn menu-btn-half menu-back-1">Cancel</button>
+            <button class="menu-btn menu-btn-half menu-btn-disabled">Rename</button>
           </div>
         </div>
-        <button class="menu-btn menu-play-now">Create &amp; Play</button>
-        <button class="menu-btn menu-back-2">Back</button>
-      </div>
 
-      <div class="menu-screen menu-skin-screen" style="display:none">
-        <h2>Select Skin</h2>
-        <div class="menu-skin-grid"></div>
-        <button class="menu-btn menu-back-3">Back</button>
+        <div class="menu-screen menu-create-screen" style="display:none">
+          <div class="menu-panel">
+            <div class="menu-panel-title">Create New World</div>
+            <div class="menu-form">
+              <div class="menu-form-row">
+                <label>World Name</label>
+                <input type="text" class="menu-input menu-world-name" placeholder="New World" maxlength="32">
+              </div>
+              <div class="menu-form-row">
+                <label>Seed (optional)</label>
+                <input type="text" class="menu-input menu-seed" placeholder="Leave blank for random">
+              </div>
+              <div class="menu-form-row">
+                <label>Game Mode</label>
+                <div class="menu-mode-toggle">
+                  <button class="menu-mode active" data-mode="survival">Survival</button>
+                  <button class="menu-mode" data-mode="creative">Creative</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="menu-btn-row">
+            <button class="menu-btn menu-btn-half menu-play-now">Create New World</button>
+            <button class="menu-btn menu-btn-half menu-back-2">Cancel</button>
+          </div>
+        </div>
+
+        <div class="menu-screen menu-skin-screen" style="display:none">
+          <div class="menu-panel">
+            <div class="menu-panel-title">Select Skin</div>
+            <div class="menu-skin-grid"></div>
+          </div>
+          <div class="menu-btn-row">
+            <button class="menu-btn menu-btn-half menu-back-3">Done</button>
+          </div>
+        </div>
+
+        <div class="menu-bottom-row">
+          <button class="menu-btn menu-btn-small menu-skins-btn">Skins</button>
+          <button class="menu-btn menu-btn-small menu-settings-btn">Settings</button>
+        </div>
       </div>
     `;
     this.root.appendChild(this.el);
@@ -107,17 +183,24 @@ export class MainMenu {
       s.style.display = k === name ? '' : 'none';
     }
     this.currentScreen = name;
+    const logoArea = this.el.querySelector('.menu-logo-area');
+    const bottomRow = this.el.querySelector('.menu-bottom-row');
+    if (name === 'title') {
+      logoArea.style.display = '';
+      bottomRow.style.display = '';
+    } else {
+      logoArea.style.display = 'none';
+      bottomRow.style.display = 'none';
+    }
   }
 
   _bindEvents() {
-    this.el.querySelector('.menu-play').addEventListener('click', () => {
+    this.el.querySelector('.menu-title-screen .menu-btn').addEventListener('click', () => {
       this._showScreen('worlds');
       this.refreshWorldList();
     });
-    this.el.querySelector('.menu-skins').addEventListener('click', () => {
+    this.el.querySelector('.menu-skins-btn').addEventListener('click', () => {
       this._showScreen('skins');
-    });
-    this.el.querySelector('.menu-settings-btn').addEventListener('click', () => {
     });
     this.el.querySelector('.menu-back-1').addEventListener('click', () => {
       this._showScreen('title');
@@ -202,7 +285,7 @@ export class MainMenu {
     if (worlds.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'menu-empty';
-      empty.textContent = 'No saved worlds yet';
+      empty.textContent = 'No saved worlds';
       this.worldList.appendChild(empty);
       return;
     }
@@ -210,6 +293,14 @@ export class MainMenu {
     for (const w of worlds) {
       const item = document.createElement('div');
       item.className = 'menu-world-item';
+      const icon = document.createElement('div');
+      icon.className = 'menu-world-icon';
+      const grass = document.createElement('div');
+      grass.className = 'menu-world-icon-grass';
+      const dirt = document.createElement('div');
+      dirt.className = 'menu-world-icon-dirt';
+      icon.appendChild(grass);
+      icon.appendChild(dirt);
       const info = document.createElement('div');
       info.className = 'menu-world-info';
       const nameEl = document.createElement('div');
@@ -218,20 +309,11 @@ export class MainMenu {
       const meta = document.createElement('div');
       meta.className = 'menu-world-meta';
       const modeLabel = w.mode === 'creative' ? 'Creative' : 'Survival';
-      const date = w.lastPlayed ? new Date(w.lastPlayed).toLocaleDateString() : '';
-      meta.textContent = modeLabel + (date ? '  ·  ' + date : '');
+      meta.textContent = modeLabel;
       info.appendChild(nameEl);
       info.appendChild(meta);
-      const del = document.createElement('button');
-      del.className = 'menu-world-delete';
-      del.textContent = 'Delete';
-      del.addEventListener('click', (e) => {
-        e.stopPropagation();
-        MainMenu.deleteWorld(w.name);
-        this.refreshWorldList();
-      });
+      item.appendChild(icon);
       item.appendChild(info);
-      item.appendChild(del);
       item.addEventListener('click', () => this.selectWorld(w.name));
       this.worldList.appendChild(item);
     }
