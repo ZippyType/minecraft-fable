@@ -213,3 +213,27 @@ export function buildMobMesh(type) {
   const fn = MOB_BUILDS[type];
   return fn ? fn() : MOB_BUILDS[MOB.ZOMBIE]();
 }
+
+export function buildPlayerMesh(skin) {
+  const g = new THREE.Group();
+  humanoid(g, {
+    head: mat((ctx, s) => {
+      px(ctx, 0, 0, s, s, skin.skin);
+      px(ctx, 0, 0, s, 3, skin.hair);
+      px(ctx, 3, 5, 3, 2, '#fff');
+      px(ctx, s - 6, 5, 3, 2, '#fff');
+      px(ctx, 4, 6, 2, 1, '#000');
+      px(ctx, s - 6, 6, 2, 1, '#000');
+    }),
+    body: mat((ctx, s) => {
+      px(ctx, 0, 0, s, s, skin.shirt);
+    }),
+    arms: mat((ctx, s) => {
+      px(ctx, 0, 0, s, s, skin.skin);
+    }),
+    legs: mat((ctx, s) => {
+      px(ctx, 0, 0, s, s, skin.pants);
+    }),
+  });
+  return g;
+}

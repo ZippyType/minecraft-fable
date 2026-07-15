@@ -55,9 +55,10 @@ export function keyLabel(code) {
 // (like switching the touch-controls mode).
 export class Settings {
   constructor() {
-    this.sensitivity = 1; // camera look multiplier, 0.2 - 3
-    this.touchMode = 'auto'; // 'auto' | 'on' | 'off'
+    this.sensitivity = 1;
+    this.touchMode = 'auto';
     this.bindings = { ...DEFAULT_BINDINGS };
+    this.selectedSkin = 0;
     this.listeners = new Set();
     this.load();
   }
@@ -107,8 +108,8 @@ export class Settings {
           if (typeof raw.bindings[k] === 'string') this.bindings[k] = raw.bindings[k];
         }
       }
+      if (typeof raw.selectedSkin === 'number') this.selectedSkin = raw.selectedSkin;
     } catch {
-      // Corrupt JSON or storage unavailable (private mode) — keep defaults.
     }
   }
 
@@ -118,9 +119,9 @@ export class Settings {
         sensitivity: this.sensitivity,
         touchMode: this.touchMode,
         bindings: this.bindings,
+        selectedSkin: this.selectedSkin,
       }));
     } catch {
-      // Storage unavailable — settings just won't persist.
     }
   }
 }
