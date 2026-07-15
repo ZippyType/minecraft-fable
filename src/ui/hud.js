@@ -407,8 +407,8 @@ export class HUD {
       const icon = BLOCKS[id].icon;
       ctx.drawImage(
         this.atlasCanvas,
-        (icon % 4) * 16,
-        Math.floor(icon / 4) * 16,
+        (icon % 8) * 16,
+        Math.floor(icon / 8) * 16,
         16, 16, 0, 0, 40, 40
       );
       return;
