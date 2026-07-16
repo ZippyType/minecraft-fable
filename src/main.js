@@ -354,13 +354,14 @@ save.start(() => {
 
 world.update(player.pos, 30);
 
-const clock = new THREE.Clock();
+let lastFrameTime = performance.now();
 let fps = 0, fpsFrames = 0, fpsTime = 0, debugTime = 0;
 let attackCd = 0;
 let touchBreakCd = 0;
 
-function frame() {
-  const dt = Math.min(clock.getDelta(), 0.1);
+function frame(time) {
+  const dt = Math.min((time - lastFrameTime) / 1000, 0.1);
+  lastFrameTime = time;
   const playing = input.locked && !uiBlocking() && !player.dead;
 
   if (playing) {
@@ -493,8 +494,9 @@ function frame() {
   }
 
   renderer.render(scene, camera);
+  window.requestAnimationFrame(frame);
 }
-renderer.setAnimationLoop(frame);
+window.requestAnimationFrame(frame);
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
