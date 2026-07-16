@@ -1,4 +1,4 @@
-6# Roadmap
+# Roadmap
 
 This repository is a lightweight browser voxel sandbox with core terrain, inventory, crafting, mobs, and world persistence. The next phase is to expand the game with deeper survival, richer content, better systems, and a multiplayer plan.
 
