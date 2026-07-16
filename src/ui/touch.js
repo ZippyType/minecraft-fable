@@ -13,13 +13,6 @@ const BUTTON_COOLDOWN_MS = 100;
 const LOOK_SENSITIVITY = 0.007;
 const STICK_DEADZONE = 0.18;
 
-function hasTouchSupport() {
-  return ('ontouchstart' in window)
-    || (navigator.maxTouchPoints > 0)
-    || (navigator.msMaxTouchPoints > 0)
-    || window.matchMedia?.('(pointer: coarse)').matches;
-}
-
 export class TouchControls {
   constructor(root, input, handlers, settings) {
     this.root = root;
@@ -109,10 +102,10 @@ export class TouchControls {
       this.userDisabled = true;
       return;
     }
-    // auto: coarse pointers or any real touch-support device get the
-    // controls right away, otherwise they appear on the first touch.
+    // auto: coarse pointers get the controls right away, hybrid devices on
+    // their first real touch.
     this.userDisabled = false;
-    if (hasTouchSupport()) {
+    if (window.matchMedia?.('(pointer: coarse)').matches) {
       this.enable();
       return;
     }

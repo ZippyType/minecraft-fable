@@ -1,10 +1,12 @@
 import { CHUNK_SIZE, CHUNK_HEIGHT } from '../world/chunk.js';
 
-const WORLDS_KEY = 'voxelcraft.worlds';
-const OLD_KEY = 'voxelcraft.world';
+const STORAGE_KEY = 'voxelcraft.world';
 const CHUNK_BYTES = CHUNK_SIZE * CHUNK_HEIGHT * CHUNK_SIZE;
 const AUTOSAVE_MS = 5000;
 
+// Chunks are mostly long runs of the same block, so run-length encoding
+// ([id, count, id, count, …]) shrinks the 16 KB block array enough to keep
+// many edited chunks inside the localStorage quota.
 export function rleEncode(data) {
   const out = [];
   let id = data[0];
@@ -31,33 +33,18 @@ export function rleDecode(rle) {
   return data;
 }
 
-function migrateOldSave() {
-  try {
-    const old = localStorage.getItem(OLD_KEY);
-    if (!old) return;
-    const worlds = JSON.parse(localStorage.getItem(WORLDS_KEY) || '[]');
-    if (!worlds.find((w) => w.name === 'World')) {
-      worlds.push({ name: 'World', seed: 20260703, mode: 'survival', lastPlayed: Date.now() });
-      localStorage.setItem(WORLDS_KEY, JSON.stringify(worlds));
-    }
-    localStorage.setItem('voxelcraft.world.World', old);
-    localStorage.removeItem(OLD_KEY);
-  } catch {}
-}
-
-migrateOldSave();
-
+// Persists the world to localStorage: edited chunks (RLE), player state,
+// inventory, game mode, and time of day. Autosaves every few seconds and
+// when the tab is hidden/closed.
 export class SaveManager {
-  constructor(worldName) {
-    this.worldName = worldName || 'World';
-    this.storageKey = 'voxelcraft.world.' + this.worldName;
+  constructor() {
     this.collect = null;
     this.timer = 0;
   }
 
   load() {
     try {
-      const raw = localStorage.getItem(this.storageKey);
+      const raw = localStorage.getItem(STORAGE_KEY);
       return raw ? JSON.parse(raw) : null;
     } catch {
       return null;
@@ -76,41 +63,19 @@ export class SaveManager {
   save() {
     if (!this.collect) return;
     try {
-      localStorage.setItem(this.storageKey, JSON.stringify(this.collect()));
-    } catch {}
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.collect()));
+    } catch {
+      // Quota exceeded or storage unavailable — the game keeps running,
+      // the world just won't persist.
+    }
   }
 
+  // Wipe the save and stop autosaving (used by /reset before a reload).
   clear() {
     this.collect = null;
     clearInterval(this.timer);
     try {
-      localStorage.removeItem(this.storageKey);
-    } catch {}
-  }
-
-  static getWorlds() {
-    try {
-      return JSON.parse(localStorage.getItem(WORLDS_KEY) || '[]');
-    } catch {
-      return [];
-    }
-  }
-
-  static saveWorldMeta(world) {
-    const worlds = SaveManager.getWorlds();
-    const idx = worlds.findIndex((w) => w.name === world.name);
-    if (idx >= 0) worlds[idx] = world;
-    else worlds.push(world);
-    try {
-      localStorage.setItem(WORLDS_KEY, JSON.stringify(worlds));
-    } catch {}
-  }
-
-  static deleteWorld(name) {
-    const worlds = SaveManager.getWorlds().filter((w) => w.name !== name);
-    try {
-      localStorage.setItem(WORLDS_KEY, JSON.stringify(worlds));
-      localStorage.removeItem('voxelcraft.world.' + name);
+      localStorage.removeItem(STORAGE_KEY);
     } catch {}
   }
 }
