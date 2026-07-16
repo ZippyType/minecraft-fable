@@ -27,7 +27,7 @@ import * as sounds from './audio/sounds.js';
 
 inject();
 
-const renderer = new THREE.WebGLRenderer({ antialias: false });
+const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 document.body.appendChild(renderer.domElement);
@@ -360,7 +360,6 @@ let attackCd = 0;
 let touchBreakCd = 0;
 
 function frame() {
-  requestAnimationFrame(frame);
   const dt = Math.min(clock.getDelta(), 0.1);
   const playing = input.locked && !uiBlocking() && !player.dead;
 
@@ -495,7 +494,7 @@ function frame() {
 
   renderer.render(scene, camera);
 }
-frame();
+renderer.setAnimationLoop(frame);
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;

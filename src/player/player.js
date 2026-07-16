@@ -8,6 +8,10 @@ export const EYE_HEIGHT = 1.62;
 const EPS = 0.001;
 const GRAVITY = 28;
 const JUMP_SPEED = 8.8;
+const HUNGER_MOVE_INTERVAL = 10; // seconds per hunger loss while walking
+const HUNGER_SPRINT_MULTIPLIER = 1.5; // sprinting drains faster
+const HUNGER_SWIM_INTERVAL = 8; // seconds per hunger loss while swimming
+const HUNGER_JUMP_SPRINT_COST = 1; // sprint jump penalty
 
 export class Player {
   constructor(spawn) {
@@ -115,7 +119,7 @@ export class Player {
       this.vel.y = Math.max(-4.5, Math.min(4.5, this.vel.y));
       if (!this.creative && moving) {
         this.swimTimer += dt;
-        if (this.swimTimer >= 3) {
+        if (this.swimTimer >= HUNGER_SWIM_INTERVAL) {
           this.swimTimer = 0;
           this.hunger = Math.max(0, this.hunger - 1);
         }
@@ -127,7 +131,7 @@ export class Player {
         this.vel.y = JUMP_SPEED;
         this.onGround = false;
         if (!this.creative && shift) {
-          this.hunger = Math.max(0, this.hunger - 2);
+          this.hunger = Math.max(0, this.hunger - HUNGER_JUMP_SPRINT_COST);
         }
       }
     }
@@ -161,8 +165,8 @@ export class Player {
 
     if (!this.creative) {
       if (moving && !this.fly) {
-        this.hungerTimer += dt * (shift ? 2 : 1);
-        if (this.hungerTimer >= 5) {
+        this.hungerTimer += dt * (shift ? HUNGER_SPRINT_MULTIPLIER : 1);
+        if (this.hungerTimer >= HUNGER_MOVE_INTERVAL) {
           this.hungerTimer = 0;
           this.hunger = Math.max(0, this.hunger - 1);
         }
