@@ -34,6 +34,7 @@ export class HUD {
     this.modeBadge = el('div', 'mode-badge');
     this.modeBadge.textContent = 'Survival';
     this.debug = el('div', 'debug');
+    this.fps = el('div', 'fps');
 
     // Floating label above the hotbar that announces the currently selected
     // item whenever the selection changes (mouse wheel, number keys, click).
@@ -139,7 +140,7 @@ export class HUD {
       this.onSettingsOpen?.();
     }, { passive: false });
 
-    root.append(this.hearts, this.hunger, this.crosshair, this.breakOverlay, this.modeBadge, this.selectedName, this.hotbar, this.debug, this.invPanel, this.overlay);
+    root.append(this.hearts, this.hunger, this.crosshair, this.breakOverlay, this.modeBadge, this.selectedName, this.hotbar, this.debug, this.fps, this.invPanel, this.overlay);
     document.body.appendChild(root);
     this.invPanel.addEventListener('mousemove', (e) => {
       if (!this.held) {
@@ -507,6 +508,10 @@ export class HUD {
       if (i < filled) h.classList.add('full');
       this.hunger.appendChild(h);
     }
+  }
+
+  updateFPS(fps) {
+    this.fps.textContent = `${fps} FPS`;
   }
 
   updateDebug(text) {

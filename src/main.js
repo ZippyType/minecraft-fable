@@ -477,6 +477,7 @@ function frame(time) {
       hud.updateHearts(player.health, player.maxHealth, player.hurtFlash);
       hud.updateHunger(player.hunger, player.maxHunger);
     }
+    hud.updateFPS(fps);
     hud.updateDebug(
       `${fps} FPS  ${gameMode}\n` +
       (isCreative() ? '' : `HP ${player.health}/${player.maxHealth}  Food ${player.hunger}/${player.maxHunger}\n`) +
