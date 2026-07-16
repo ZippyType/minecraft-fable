@@ -8,10 +8,10 @@ export const EYE_HEIGHT = 1.62;
 const EPS = 0.001;
 const GRAVITY = 28;
 const JUMP_SPEED = 8.8;
-const HUNGER_MOVE_INTERVAL = 10; // seconds per hunger loss while walking
+const HUNGER_MOVE_INTERVAL = 30; // seconds per hunger loss while walking
 const HUNGER_SPRINT_MULTIPLIER = 1.5; // sprinting drains faster
-const HUNGER_SWIM_INTERVAL = 8; // seconds per hunger loss while swimming
-const HUNGER_JUMP_SPRINT_COST = 1; // sprint jump penalty
+const HUNGER_SWIM_INTERVAL = 20; // seconds per hunger loss while swimming
+const HUNGER_JUMP_SPRINT_COST = 0; // sprint jump penalty
 
 export class Player {
   constructor(spawn) {

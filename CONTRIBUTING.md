@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in contributing to Minecraft Fable.
+Thanks for your interest in contributing to VoxelCraft.
 
 ## What to work on
 
@@ -25,7 +25,7 @@ A basic multiplayer server would be a great future addition.
 
 ### What to build first
 
-- a minimal Node.js or Deno server
+- a server. (All servers are OK, even with bad specs!)
 - a wire protocol for `join`, `leave`, `player_move`, `block_place`, `block_break`, and `chat` messages
 - server-side persistence for edited chunks
 - client messaging from the browser to the server
