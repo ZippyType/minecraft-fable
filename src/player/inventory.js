@@ -17,7 +17,7 @@ export class Inventory {
     this.slots = Array(INVENTORY_SIZE).fill(null);
     this.selected = 0;
     this.creative = false;
-    this.craftSlots = [null, null, null, null];
+    this.craftSlots = Array(9).fill(null);
   }
 
   getSlot(i) {
@@ -95,6 +95,29 @@ export class Inventory {
 
   removeFromSelected(count = 1) {
     return this.removeFromSlot(this.selected, count);
+  }
+
+  countItem(id) {
+    if (this.creative) return Infinity;
+    let total = 0;
+    for (const s of this.slots) {
+      if (s && s.id === id) total += s.count;
+    }
+    return total;
+  }
+
+  removeItem(id, count = 1) {
+    if (this.creative) return count;
+    let left = count;
+    for (let i = 0; i < INVENTORY_SIZE && left > 0; i++) {
+      const s = this.slots[i];
+      if (!s || s.id !== id || s.infinite) continue;
+      const take = Math.min(left, s.count);
+      s.count -= take;
+      left -= take;
+      if (s.count <= 0) this.slots[i] = null;
+    }
+    return count - left;
   }
 
   quickMove(i) {

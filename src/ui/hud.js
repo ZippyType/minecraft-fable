@@ -65,7 +65,7 @@ export class HUD {
     this.craftArea.innerHTML = '<span class="craft-label">Crafting</span>';
     this.craftGrid = el('div', 'craft-grid');
     this.craftSlots = [];
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 9; i++) {
       const slot = this.makeSlot(i, false, 'craft');
       this.craftGrid.appendChild(slot.el);
       this.craftSlots.push(slot);
@@ -88,8 +88,23 @@ export class HUD {
       this.invHotbar.appendChild(slot.el);
       this.invHotbarSlots.push(slot);
     }
+
+    this.equipArea = el('div', 'equip-area');
+    this.equipSlots = [];
+    const armorLabels = ['helmet', 'chest', 'legs', 'boots'];
+    for (let i = 0; i < armorLabels.length; i++) {
+      const slot = this.makeSlot(i, false, 'armor');
+      slot.el.classList.add('armor-slot');
+      slot.el.dataset.slot = armorLabels[i];
+      const label = el('span', 'armor-label');
+      label.textContent = armorLabels[i];
+      slot.el.appendChild(label);
+      this.equipArea.appendChild(slot.el);
+      this.equipSlots.push(slot);
+    }
+
     body.append(this.craftArea, el('div', 'inv-right'));
-    body.lastChild.append(this.invGrid, this.invHotbar);
+    body.lastChild.append(this.invGrid, this.invHotbar, this.equipArea);
     this.invPanel.append(body);
 
     this.heldCursor = el('div', 'held-cursor');
@@ -259,6 +274,7 @@ export class HUD {
   }
 
   slotClick(kind, index, shift) {
+    if (kind === 'armor') return;
     // The in-game hotbar: tapping/clicking selects the slot. Only when the
     // inventory panel is open does it act like a regular inventory slot.
     if (kind === 'hotbar') {
@@ -308,6 +324,21 @@ export class HUD {
 
   updateCraftOutput() {
     this.craftOutput = matchRecipe(this.inventory.craftSlots);
+  }
+
+  setPlayer(player) {
+    this.player = player;
+  }
+
+  updateArmor() {
+    const armor = this.player?.armor ?? {};
+    for (let i = 0; i < this.equipSlots.length; i++) {
+      const slot = this.equipSlots[i];
+      const kind = slot.el.dataset.slot;
+      const id = armor?.[kind] ?? null;
+      this.updateSlot(slot, id ? { id, count: 1 } : null);
+      slot.el.classList.toggle('selected', false);
+    }
   }
 
   onStart(cb) {
@@ -452,6 +483,7 @@ export class HUD {
   refresh() {
     this.refreshHotbar();
     this.refreshInventory();
+    this.updateArmor();
   }
 
   updateHearts(health, maxHealth, flash) {

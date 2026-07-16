@@ -130,6 +130,19 @@ export function itemName(id) {
   return ITEMS[id]?.name ?? 'Item';
 }
 
+export function smeltResult(id) {
+  switch (id) {
+    case ITEM.RAW_STEAK:
+      return ITEM.COOKED_STEAK;
+    case ITEM.RAW_CHICKEN:
+      return ITEM.COOKED_CHICKEN;
+    case ITEM.RAW_LAMB:
+      return ITEM.COOKED_LAMB;
+    default:
+      return null;
+  }
+}
+
 export function itemPurpose(id) {
   return ITEMS[id]?.purpose ?? null;
 }

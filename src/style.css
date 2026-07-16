@@ -340,8 +340,32 @@ canvas {
 
 .craft-grid {
   display: grid;
-  grid-template-columns: repeat(2, 48px);
+  grid-template-columns: repeat(3, 48px);
   gap: 4px;
+}
+
+.equip-area {
+  display: grid;
+  grid-template-columns: repeat(2, 48px);
+  gap: 6px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 6px;
+}
+
+.slot.armor-slot {
+  position: relative;
+}
+
+.armor-label {
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  right: 4px;
+  font-size: 9px;
+  opacity: 0.7;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
 }
 
 .slot.craft-out {

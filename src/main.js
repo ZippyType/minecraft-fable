@@ -6,7 +6,7 @@ import { Sky } from './render/sky.js';
 import { Terrain } from './world/terrain.js';
 import { World, RENDER_DISTANCE } from './world/world.js';
 import { BLOCK } from './world/blocks.js';
-import { ITEM, isBlock, isItem, isFood, foodValue, itemPurpose, meleeBonus, armorSlot } from './world/items.js';
+import { ITEM, isBlock, isItem, isFood, foodValue, itemPurpose, meleeBonus, armorSlot, smeltResult } from './world/items.js';
 import { createItemIcons } from './render/itemIcons.js';
 import { DropManager } from './entities/drops.js';
 import { Player, EYE_HEIGHT } from './player/player.js';
@@ -73,11 +73,18 @@ if (savedGame?.player) {
   if (p.spawn) player.spawnPoint.set(p.spawn[0], p.spawn[1], p.spawn[2]);
   if (typeof p.health === 'number') player.health = p.health;
   if (typeof p.hunger === 'number') player.hunger = p.hunger;
+  if (Array.isArray(p.armor)) {
+    player.armor.helmet = p.armor[0] ?? null;
+    player.armor.chest = p.armor[1] ?? null;
+    player.armor.legs = p.armor[2] ?? null;
+    player.armor.boots = p.armor[3] ?? null;
+  }
 }
 const sky = new Sky(scene);
 const inventory = new Inventory();
 const hud = new HUD(atlas.canvas, itemIcons, inventory);
 const chat = new Chat();
+hud.setPlayer(player);
 const mobs = new MobManager(scene, world);
 const drops = new DropManager(scene, world, inventory, itemIcons, atlas.texture);
 const breaker = new BlockBreaker(world, inventory, drops);
@@ -152,6 +159,19 @@ function useItem() {
   const id = inventory.selectedId();
   if (!id || isBlock(id)) return;
   const purpose = itemPurpose(id);
+  const t = currentTarget();
+  if (t && t.id === BLOCK.FURNACE) {
+    const cooked = smeltResult(id);
+    if (cooked) {
+      if (!isCreative()) inventory.removeFromSelected(1);
+      inventory.addItem(cooked, 1);
+      sounds.playPlace();
+      hud.refresh();
+      hud.refreshSelectedName();
+      return;
+    }
+  }
+
   if (purpose === 'armor') {
     const slot = armorSlot(id);
     if (slot && player.armor[slot] !== id) {
