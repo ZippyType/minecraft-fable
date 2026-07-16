@@ -82,6 +82,7 @@ export class MainMenu {
     this.currentScreen = 'title';
     this.selectedMode = 'survival';
     this.selectedSkin = this.settings.selectedSkin || 0;
+    this.selectedWorld = null;
     this._build();
     this._bindEvents();
   }
@@ -112,12 +113,12 @@ export class MainMenu {
             <div class="menu-world-list"></div>
           </div>
           <div class="menu-btn-row">
-            <button class="menu-btn menu-btn-half">Create New World</button>
-            <button class="menu-btn menu-btn-half menu-btn-disabled">Delete</button>
+            <button class="menu-btn menu-btn-half menu-play-selected" disabled>Play Selected World</button>
+            <button class="menu-btn menu-btn-half menu-world-delete" disabled>Delete</button>
           </div>
           <div class="menu-btn-row">
+            <button class="menu-btn menu-btn-half menu-create-world">Create New World</button>
             <button class="menu-btn menu-btn-half menu-back-1">Cancel</button>
-            <button class="menu-btn menu-btn-half menu-btn-disabled">Rename</button>
           </div>
         </div>
 
@@ -175,6 +176,8 @@ export class MainMenu {
 
     this.worldList = this.el.querySelector('.menu-world-list');
     this.skinGrid = this.el.querySelector('.menu-skin-grid');
+    this.playSelectedBtn = this.el.querySelector('.menu-play-selected');
+    this.deleteSelectedBtn = this.el.querySelector('.menu-world-delete');
     this._buildSkinGrid();
   }
 
@@ -192,6 +195,16 @@ export class MainMenu {
       logoArea.style.display = 'none';
       bottomRow.style.display = 'none';
     }
+    if (name === 'worlds') {
+      this.selectedWorld = null;
+      this._updateWorldButtons();
+    }
+  }
+
+  _updateWorldButtons() {
+    const hasSelection = this.selectedWorld !== null;
+    this.playSelectedBtn.disabled = !hasSelection;
+    this.deleteSelectedBtn.disabled = !hasSelection;
   }
 
   _bindEvents() {
@@ -222,6 +235,15 @@ export class MainMenu {
     });
     this.el.querySelector('.menu-play-now').addEventListener('click', () => {
       this._createAndPlay();
+    });
+    this.playSelectedBtn.addEventListener('click', () => {
+      if (this.selectedWorld) this.onPlay(this.selectedWorld);
+    });
+    this.deleteSelectedBtn.addEventListener('click', () => {
+      if (!this.selectedWorld) return;
+      MainMenu.deleteWorld(this.selectedWorld.name);
+      this.selectedWorld = null;
+      this.refreshWorldList();
     });
     this.el.querySelectorAll('.menu-mode').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -282,6 +304,8 @@ export class MainMenu {
   refreshWorldList() {
     const worlds = MainMenu.loadWorlds();
     this.worldList.innerHTML = '';
+    this.selectedWorld = null;
+    this._updateWorldButtons();
     if (worlds.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'menu-empty';
@@ -314,15 +338,17 @@ export class MainMenu {
       info.appendChild(meta);
       item.appendChild(icon);
       item.appendChild(info);
-      item.addEventListener('click', () => this.selectWorld(w.name));
+      item.addEventListener('click', () => {
+        this.selectedWorld = w;
+        this.worldList.querySelectorAll('.menu-world-item').forEach((el) => el.classList.remove('selected'));
+        item.classList.add('selected');
+        this._updateWorldButtons();
+      });
+      item.addEventListener('dblclick', () => {
+        this.onPlay(w);
+      });
       this.worldList.appendChild(item);
     }
-  }
-
-  selectWorld(name) {
-    const worlds = MainMenu.loadWorlds();
-    const w = worlds.find((w) => w.name === name);
-    if (w) this.onPlay(w);
   }
 
   show() {
