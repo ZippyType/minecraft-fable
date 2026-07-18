@@ -142,9 +142,16 @@ export class World {
       const x = (i % 45) * 3 - 66;
       const z = Math.floor(i / 45) * 3 - 66;
       const h = this.terrain.heightAt(x, z);
-      if (h >= SEA_LEVEL + 2 && !this.terrain.treeAt(x, z)) {
-        return new THREE.Vector3(x + 0.5, h + 2, z + 0.5);
+      if (h < SEA_LEVEL + 2) continue;
+      // No tree within canopy range (2 blocks), or the player could spawn
+      // with their head inside overhanging leaves.
+      let nearTree = false;
+      for (let dx = -2; dx <= 2 && !nearTree; dx++) {
+        for (let dz = -2; dz <= 2 && !nearTree; dz++) {
+          if (this.terrain.treeAt(x + dx, z + dz)) nearTree = true;
+        }
       }
+      if (!nearTree) return new THREE.Vector3(x + 0.5, h + 2, z + 0.5);
     }
     return new THREE.Vector3(0.5, CHUNK_HEIGHT - 8, 0.5);
   }
